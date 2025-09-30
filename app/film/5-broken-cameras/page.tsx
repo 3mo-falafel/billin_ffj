@@ -74,10 +74,10 @@ export default function FiveBrokenCamerasPage() {
   ]
 
   const streamingPlatforms = [
-    { name: "Kanopy", url: "https://kanopy.com", note_en: "with closed captions", note_ar: "مع ترجمة مغلقة" },
-    { name: "Prime Video", url: "https://amazon.com", note_en: "availability varies", note_ar: "التوفر متغير" },
-    { name: "Netflix", url: "https://netflix.com", note_en: "availability varies", note_ar: "التوفر متغير" },
-    { name: "Tubi", url: "https://tubi.tv", note_en: "free with ads", note_ar: "مجاني مع إعلانات" }
+    { name: "Kanopy", url: "https://www.kanopy.com/en/product/5-broken-cameras-non-violent-resistance-mi?utm_source=chatgpt.com", note_en: "with closed captions", note_ar: "مع ترجمة مغلقة" },
+    { name: "Amazon Prime", url: "https://www.amazon.com/5-Broken-Cameras-English-Subtitled/dp/B00B03Z858", note_en: "rent or buy", note_ar: "إيجار أو شراء" },
+    { name: "Apple TV", url: "https://tv.apple.com/gb/movie/5-broken-cameras/umc.cmc.64s4y27oe5ovmvumg0l1s7dwc", note_en: "rent or buy", note_ar: "إيجار أو شراء" },
+    { name: "YouTube", url: "https://www.youtube.com/watch?v=EcTN3g-b0iA", note_en: "watch online", note_ar: "شاهد أونلاين" }
   ]
 
   return (
