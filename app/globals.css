@@ -1,0 +1,364 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "../styles/palestinian-embroidery.css";
+
+@custom-variant dark (&:is(.dark *));
+
+:root {
+  /* Updated color tokens to reflect Palestinian identity colors (green, red, black, white) */
+  --background: oklch(1 0 0); /* White background */
+  --foreground: oklch(0.3 0 0); /* Dark grey for text */
+  --card: oklch(0.98 0 0); /* Light grey for cards */
+  --card-foreground: oklch(0.25 0 0); /* Dark text on cards */
+  --popover: oklch(1 0 0); /* White popover background */
+  --popover-foreground: oklch(0.3 0 0); /* Dark text on popovers */
+  --primary: oklch(0.45 0.15 142); /* Palestinian green */
+  --primary-foreground: oklch(1 0 0); /* White text on primary */
+  --secondary: oklch(0.55 0.2 45); /* Palestinian red/amber */
+  --secondary-foreground: oklch(1 0 0); /* White text on secondary */
+  --muted: oklch(0.96 0 0); /* Light muted background */
+  --muted-foreground: oklch(0.5 0 0); /* Muted text */
+  --accent: oklch(0.6 0.15 195); /* Cyan accent for highlights */
+  --accent-foreground: oklch(1 0 0); /* White text on accent */
+  --destructive: oklch(0.577 0.245 27.325);
+  --destructive-foreground: oklch(1 0 0);
+  --border: oklch(0.9 0 0); /* Light border */
+  --input: oklch(0.98 0 0); /* Light input background */
+  --ring: oklch(0.6 0.15 195); /* Cyan focus ring */
+  --chart-1: oklch(0.98 0 0);
+  --chart-2: oklch(0.45 0.15 142); /* Palestinian green */
+  --chart-3: oklch(0.55 0.2 45); /* Palestinian red/amber */
+  --chart-4: oklch(0.3 0 0); /* Dark grey */
+  --chart-5: oklch(0.6 0.15 195); /* Cyan */
+  --radius: 0.5rem;
+  --sidebar: oklch(0.98 0 0);
+  --sidebar-foreground: oklch(0.25 0 0);
+  --sidebar-primary: oklch(0.45 0.15 142);
+  --sidebar-primary-foreground: oklch(1 0 0);
+  --sidebar-accent: oklch(0.6 0.15 195);
+  --sidebar-accent-foreground: oklch(1 0 0);
+  --sidebar-border: oklch(0.9 0 0);
+  --sidebar-ring: oklch(0.45 0.15 142);
+}
+
+.dark {
+  /* Updated dark mode colors to maintain Palestinian identity while ensuring readability */
+  --background: oklch(0.1 0 0); /* Very dark background */
+  --foreground: oklch(0.95 0 0); /* Light text */
+  --card: oklch(0.15 0 0); /* Dark card background */
+  --card-foreground: oklch(0.95 0 0); /* Light text on cards */
+  --popover: oklch(0.1 0 0); /* Dark popover */
+  --popover-foreground: oklch(0.95 0 0); /* Light text on popovers */
+  --primary: oklch(0.55 0.15 142); /* Brighter Palestinian green for dark mode */
+  --primary-foreground: oklch(0.1 0 0); /* Dark text on primary */
+  --secondary: oklch(0.65 0.2 45); /* Brighter Palestinian red/amber */
+  --secondary-foreground: oklch(0.1 0 0); /* Dark text on secondary */
+  --muted: oklch(0.2 0 0); /* Dark muted background */
+  --muted-foreground: oklch(0.7 0 0); /* Light muted text */
+  --accent: oklch(0.7 0.15 195); /* Brighter cyan accent */
+  --accent-foreground: oklch(0.1 0 0); /* Dark text on accent */
+  --destructive: oklch(0.7 0.245 27.325);
+  --destructive-foreground: oklch(0.1 0 0);
+  --border: oklch(0.25 0 0); /* Dark border */
+  --input: oklch(0.2 0 0); /* Dark input background */
+  --ring: oklch(0.7 0.15 195); /* Bright cyan focus ring */
+  --chart-1: oklch(0.55 0.15 142);
+  --chart-2: oklch(0.65 0.2 45);
+  --chart-3: oklch(0.7 0.15 195);
+  --chart-4: oklch(0.8 0 0);
+  --chart-5: oklch(0.6 0.1 300);
+  --sidebar: oklch(0.15 0 0);
+  --sidebar-foreground: oklch(0.95 0 0);
+  --sidebar-primary: oklch(0.55 0.15 142);
+  --sidebar-primary-foreground: oklch(0.1 0 0);
+  --sidebar-accent: oklch(0.7 0.15 195);
+  --sidebar-accent-foreground: oklch(0.1 0 0);
+  --sidebar-border: oklch(0.25 0 0);
+  --sidebar-ring: oklch(0.55 0.15 142);
+}
+
+@theme inline {
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+/* Added RTL support for Arabic language */
+[dir="rtl"] {
+  direction: rtl;
+}
+
+[dir="rtl"] .rtl\:text-right {
+  text-align: right;
+}
+
+[dir="rtl"] .rtl\:text-left {
+  text-align: left;
+}
+
+/* Added smooth transitions for language switching */
+.language-transition {
+  transition: all 0.3s ease-in-out;
+}
+
+/* Added custom styles for bilingual typography */
+.arabic-text {
+  font-family: "Noto Sans Arabic", "Geist Sans", sans-serif;
+  line-height: 1.8;
+}
+
+.english-text {
+  font-family: "Geist Sans", sans-serif;
+  line-height: 1.6;
+}
+
+/* Site-wide historical/elegant background overlay */
+.site-background {
+  background-color: var(--background);
+  background-image:
+    linear-gradient(rgba(0,0,0,0.04), rgba(0,0,0,0.04));
+  background-size: cover;
+  background-attachment: fixed;
+}
+
+.bg-overlay-pattern {
+  position: relative;
+}
+
+/* Hero background - using B1.jpg */
+.hero-bg-image {
+  background-image: url('/B1.jpg');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  filter: saturate(1.1) contrast(1.1) brightness(0.9);
+  will-change: transform;
+}
+
+/* Enhanced decorative corners for entrance frame with motion */
+.entrance-hero .corner {
+  position: absolute;
+  width: 60px;
+  height: 60px;
+  border: 2px solid rgba(255,255,255,0.8);
+  border-radius: 6px;
+  backdrop-filter: blur(4px);
+  box-shadow: 
+    0 0 0 1px rgba(255,255,255,0.2), 
+    0 4px 20px -4px rgba(0,0,0,0.5),
+    inset 0 1px 0 rgba(255,255,255,0.1);
+  background: rgba(255,255,255,0.05);
+}
+.entrance-hero .corner.top-left { 
+  top: 2rem; 
+  left: 2rem; 
+  border-right: none; 
+  border-bottom: none; 
+}
+.entrance-hero .corner.top-right { 
+  top: 2rem; 
+  right: 2rem; 
+  border-left: none; 
+  border-bottom: none; 
+}
+.entrance-hero .corner.bottom-left { 
+  bottom: 2rem; 
+  left: 2rem; 
+  border-right: none; 
+  border-top: none; 
+}
+.entrance-hero .corner.bottom-right { 
+  bottom: 2rem; 
+  right: 2rem; 
+  border-left: none; 
+  border-top: none; 
+}
+
+/* Floating particles animation */
+.particle {
+  position: absolute;
+  width: 4px;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.6);
+  border-radius: 50%;
+  animation: float 15s infinite linear;
+  pointer-events: none;
+}
+
+.particle-1 {
+  top: 20%;
+  left: 10%;
+  animation-delay: 0s;
+  animation-duration: 20s;
+}
+
+.particle-2 {
+  top: 60%;
+  right: 15%;
+  animation-delay: -5s;
+  animation-duration: 25s;
+}
+
+.particle-3 {
+  bottom: 30%;
+  left: 80%;
+  animation-delay: -10s;
+  animation-duration: 18s;
+}
+
+@keyframes float {
+  0% {
+    transform: translateY(0px) translateX(0px) scale(1);
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  90% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(-100vh) translateX(20px) scale(0.5);
+    opacity: 0;
+  }
+}
+
+@keyframes scroll-left {
+  0% {
+    transform: translateX(100%);
+  }
+  100% {
+    transform: translateX(-100%);
+  }
+}
+
+.animate-scroll {
+  animation: scroll-left 60s linear infinite;
+}
+
+/* News ticker sticks below navigation */
+.news-ticker {
+  position: sticky !important;
+  top: 80px !important; /* Height of navigation (80px) */
+  z-index: 40 !important;
+}
+
+/* Fallback if image missing */
+.hero-bg-image:empty { background-image: linear-gradient(120deg, var(--primary)/40, var(--secondary)/40); }
+
+/* Heading font variable */
+.font-heading, .font-heading * { font-family: var(--font-heading), var(--font-geist-sans), serif; }
+
+/* Admin Dashboard Animations */
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pulse-glow {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 0 10px rgba(34, 197, 94, 0);
+  }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.6s ease-out;
+}
+
+.animate-slide-up {
+  animation: slide-up 0.6s ease-out forwards;
+  opacity: 0;
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 2s infinite;
+}
+
+/* Gradient text utilities */
+.gradient-text {
+  background: linear-gradient(135deg, #22c55e, #059669, #0d9488);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Glassmorphism effect */
+.glass {
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+/* Hover effects */
+.hover-lift {
+  transition: all 0.3s ease;
+}
+
+.hover-lift:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}

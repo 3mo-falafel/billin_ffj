@@ -1,0 +1,166 @@
+/* Add this to your CSS file - Palestinian Embroidery Inspired Colors and Backgrounds */
+
+/* Palestinian Embroidery Color Palette */
+:root {
+  --palestinian-red: #C8102E;      /* Traditional red from tatreez */
+  --palestinian-black: #000000;    /* Traditional black outlines */
+  --palestinian-gold: #DAA520;     /* Gold thread accents */
+  --palestinian-green: #006233;    /* Olive green */
+  --palestinian-purple: #663399;   /* Traditional purple */
+  --palestinian-orange: #FF6B35;   /* Warm orange accent */
+  --palestinian-cream: #F8F5F0;    /* Natural fabric color */
+  --palestinian-navy: #1B365D;     /* Deep blue from some patterns */
+}
+
+/* Simple utility color classes (can be used like Tailwind) */
+.bg-palestinian-green { background-color: var(--palestinian-green) !important; }
+.bg-palestinian-red { background-color: var(--palestinian-red) !important; }
+.bg-palestinian-gold { background-color: var(--palestinian-gold) !important; }
+.bg-palestinian-cream { background-color: var(--palestinian-cream) !important; }
+.text-palestinian-green { color: var(--palestinian-green) !important; }
+.text-palestinian-red { color: var(--palestinian-red) !important; }
+.text-palestinian-gold { color: var(--palestinian-gold) !important; }
+.border-palestinian-green { border-color: var(--palestinian-green) !important; }
+.border-palestinian-red { border-color: var(--palestinian-red) !important; }
+.border-palestinian-gold { border-color: var(--palestinian-gold) !important; }
+
+/* Creative, reusable tatreez-inspired buttons */
+.btn-tatreez-primary {
+  background-color: var(--palestinian-red);
+  color: #fff;
+  border: 2px solid var(--palestinian-red);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.15);
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+.btn-tatreez-primary:hover {
+  background-color: transparent;
+  color: var(--palestinian-red);
+  border-color: var(--palestinian-red);
+  transform: translateY(-2px);
+}
+
+.btn-tatreez-gold {
+  background-color: var(--palestinian-gold);
+  color: var(--palestinian-black);
+  border: 2px solid var(--palestinian-gold);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.15);
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+.btn-tatreez-gold:hover {
+  background-color: transparent;
+  color: var(--palestinian-gold);
+  border-color: var(--palestinian-gold);
+  transform: translateY(-2px);
+}
+
+.btn-tatreez-green {
+  background-color: var(--palestinian-green);
+  color: #fff;
+  border: 2px solid var(--palestinian-green);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.15);
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+.btn-tatreez-green:hover {
+  background-color: transparent;
+  color: var(--palestinian-green);
+  border-color: var(--palestinian-green);
+  transform: translateY(-2px);
+}
+
+/* Site-wide subtle tatreez background */
+.tatreez-site-bg {
+  background-color: var(--palestinian-cream);
+  background-image:
+    radial-gradient(circle at 20% 20%, rgba(200,16,46,0.06) 2px, transparent 2px),
+    radial-gradient(circle at 80% 80%, rgba(218,165,32,0.08) 2px, transparent 2px),
+    radial-gradient(circle at 40% 60%, rgba(0,98,51,0.06) 1px, transparent 1px),
+    url('/traditional-arts.png');
+  background-size: 40px 40px, 60px 60px, 30px 30px, cover;
+  background-position: 0 0, 20px 20px, 10px 10px, center;
+  background-repeat: no-repeat, no-repeat, no-repeat, no-repeat;
+  background-attachment: fixed;
+}
+
+.embroidery-page-bg {
+  background-image: linear-gradient(rgba(248, 245, 240, 0.9), rgba(248, 245, 240, 0.95)), url('/tatreez.jpg');
+  background-size: cover;
+  background-position: center;
+  background-attachment: fixed;
+}
+
+/* Background patterns inspired by Palestinian embroidery */
+.embroidery-bg-pattern {
+  background-image: 
+    radial-gradient(circle at 20% 20%, var(--palestinian-red) 2px, transparent 2px),
+    radial-gradient(circle at 80% 80%, var(--palestinian-gold) 2px, transparent 2px),
+    radial-gradient(circle at 40% 60%, var(--palestinian-green) 1px, transparent 1px);
+  background-size: 40px 40px, 60px 60px, 30px 30px;
+  background-position: 0 0, 20px 20px, 10px 10px;
+}
+
+.embroidery-border-pattern {
+  background-image: repeating-linear-gradient(
+    45deg,
+    var(--palestinian-red),
+    var(--palestinian-red) 2px,
+    transparent 2px,
+    transparent 8px,
+    var(--palestinian-gold) 8px,
+    var(--palestinian-gold) 10px,
+    transparent 10px,
+    transparent 16px
+  );
+}
+
+.traditional-pattern-bg {
+  background-image: 
+    linear-gradient(45deg, var(--palestinian-red) 25%, transparent 25%),
+    linear-gradient(-45deg, var(--palestinian-red) 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, var(--palestinian-gold) 75%),
+    linear-gradient(-45deg, transparent 75%, var(--palestinian-gold) 75%);
+  background-size: 20px 20px;
+  background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+  opacity: 0.1;
+}
+
+/* Geometric patterns inspired by tatreez */
+.geometric-embroidery-bg {
+  background-image: 
+    conic-gradient(from 45deg at 50% 50%, 
+      var(--palestinian-red) 0deg 90deg, 
+      transparent 90deg 180deg, 
+      var(--palestinian-green) 180deg 270deg, 
+      transparent 270deg 360deg);
+  background-size: 40px 40px;
+  opacity: 0.15;
+}
+
+/* Subtle cross-stitch pattern */
+.cross-stitch-bg {
+  background-image: 
+    radial-gradient(circle at 50% 50%, var(--palestinian-red) 1px, transparent 1px),
+    radial-gradient(circle at 25% 25%, var(--palestinian-gold) 0.5px, transparent 0.5px),
+    radial-gradient(circle at 75% 75%, var(--palestinian-green) 0.5px, transparent 0.5px);
+  background-size: 16px 16px, 8px 8px, 12px 12px;
+  background-position: 0 0, 4px 4px, 6px 6px;
+  opacity: 0.1;
+}
+
+/* Photo background using a public tatreez image */
+.embroidery-photo-bg {
+  background-image: url('/traditional-arts.png');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  position: relative;
+}
+.embroidery-photo-bg::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to bottom right, rgba(248,245,240,0.9), rgba(255,255,255,0.9));
+  pointer-events: none;
+}
