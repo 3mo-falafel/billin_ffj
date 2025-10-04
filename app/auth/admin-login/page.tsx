@@ -6,65 +6,37 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import Link from "next/link"
-import { useRouter } from "next/navigation"
-import { useState } from "react"
+import { useState, useTransition } from "react"
 import { useLanguage } from "@/hooks/use-language"
+import { loginAction } from "./actions"
 
 export default function AdminLoginPage() {
-  const [email, setEmail] = useState("")
-  const [password, setPassword] = useState("")
   const [error, setError] = useState<string | null>(null)
-  const [isLoading, setIsLoading] = useState(false)
-  const router = useRouter()
+  const [isPending, startTransition] = useTransition()
   const { t } = useLanguage()
 
-  const handleLogin = async (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
-    console.log('🔵 handleLogin called - form submitted')
-    console.log('🔵 Email:', email)
-    console.log('🔵 Password length:', password.length)
-    
-    setIsLoading(true)
     setError(null)
 
-    try {
-      console.log('🔵 About to fetch /api/auth/login')
-      
-      // Call our custom login API endpoint
-      const response = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include', // Important: include cookies in the request
-        body: JSON.stringify({ email, password }),
-      })
+    console.log('🔵 Form submitted - using server action')
 
-      console.log('🔵 Response status:', response.status)
-      console.log('🔵 Response headers:', Object.fromEntries(response.headers.entries()))
-
-      const data = await response.json()
-      console.log('🔵 Response data:', data)
-
-      if (!response.ok) {
-        console.log('🔴 Login failed:', data.error)
-        throw new Error(data.error || 'Login failed')
+    const formData = new FormData(e.currentTarget)
+    
+    startTransition(async () => {
+      try {
+        const result = await loginAction(formData)
+        
+        if (result?.error) {
+          console.log('🔴 Server action returned error:', result.error)
+          setError(result.error)
+        }
+        // If successful, the server action will redirect automatically
+      } catch (error) {
+        console.error('🔴 Client error:', error)
+        setError('An unexpected error occurred')
       }
-
-      console.log('✅ Login successful, redirecting to /admin')
-      
-      // Wait for cookies to be properly set before redirecting
-      // Use a longer delay to ensure cookies are persisted
-      await new Promise(resolve => setTimeout(resolve, 500))
-      
-      console.log('✅ Now redirecting to:', data.redirectTo || '/admin')
-      window.location.href = data.redirectTo || "/admin"
-    } catch (error: unknown) {
-      console.error('🔴 Login error caught:', error)
-      setError(error instanceof Error ? error.message : "An error occurred")
-      setIsLoading(false)
-    }
+    })
   }
 
   return (
@@ -82,30 +54,28 @@ export default function AdminLoginPage() {
                   <Label htmlFor="email">{t("common.email", "Email")}</Label>
                   <Input
                     id="email"
+                    name="email"
                     type="email"
                     placeholder="admin@bilin.org"
                     required
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
                   />
                 </div>
                 <div className="grid gap-2">
                   <Label htmlFor="password">{t("common.password", "Password")}</Label>
                   <Input
                     id="password"
+                    name="password"
                     type="password"
                     required
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
                   />
                 </div>
                 {error && <p className="text-sm text-palestinian-red">{error}</p>}
                 <Button
                   type="submit"
                   className="w-full bg-palestinian-green hover:bg-palestinian-green/90"
-                  disabled={isLoading}
+                  disabled={isPending}
                 >
-                  {isLoading ? t("common.loading", "Loading...") : t("admin.login.button", "Login to Admin")}
+                  {isPending ? t("common.loading", "Loading...") : t("admin.login.button", "Login to Admin")}
                 </Button>
               </div>
               {/* Registration is disabled for security */}
