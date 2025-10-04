@@ -1,3 +1,6 @@
+// Server-only database client
+// This file uses Node.js modules and should only be imported server-side
+import 'server-only';
 import { query } from './connection'
 
 /**

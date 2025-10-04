@@ -1,3 +1,6 @@
+// Server-only database connection pool
+// This file uses Node.js modules and should only be imported server-side
+import 'server-only';
 import { Pool, PoolConfig, QueryResult, QueryResultRow } from 'pg'
 
 // PostgreSQL connection configuration
