@@ -2,7 +2,6 @@
 
 import type React from "react"
 
-import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -22,44 +21,28 @@ export default function AdminLoginPage() {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
-    const supabase = createClient()
     setIsLoading(true)
     setError(null)
 
     try {
-      const { data, error: authError } = await supabase.auth.signInWithPassword({
-        email,
-        password,
+      // Call our custom login API endpoint
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password }),
       })
 
-      if (authError) throw authError
+      const data = await response.json()
 
-      // Check if user is admin; auto-create record if missing
-      let { data: adminUser } = await supabase
-        .from("admin_users")
-        .select("*")
-        .eq("id", data.user.id)
-        .single()
-
-      if (!adminUser) {
-        const { error: insertError } = await supabase.from("admin_users").insert({
-          id: data.user.id,
-            email: data.user.email,
-          role: "admin",
-        })
-        if (insertError) {
-          // eslint-disable-next-line no-console
-          console.error("admin_users insertError", insertError)
-          await supabase.auth.signOut()
-          throw new Error(
-            `Access denied. Admin record missing and could not be created. (${insertError.code || "code?"}: ${
-              insertError.message || "unknown"
-            })`
-          )
-        }
+      if (!response.ok) {
+        throw new Error(data.error || 'Login failed')
       }
 
+      // Success! Redirect to admin dashboard
       router.push("/admin")
+      router.refresh() // Refresh to update session
     } catch (error: unknown) {
       setError(error instanceof Error ? error.message : "An error occurred")
     } finally {
