@@ -4,6 +4,9 @@ import { NewsTicker } from "@/components/news-ticker"
 import { Footer } from "@/components/footer"
 import { CraftsClientContent } from "@/components/crafts/crafts-client-content"
 
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
 export const metadata = {
   title: "Bilin Traditional Embroidery | Palestinian Cultural Heritage",
   description: "Discover authentic Palestinian embroidery (tatreez) from Bil'in village. Traditional techniques passed down through generations.",
