@@ -298,6 +298,33 @@ class DatabaseClient {
       })
     })
   }
+
+  // Auth mock for compatibility
+  auth = {
+    getUser: async () => {
+      // This should be replaced with actual JWT session verification
+      // For now, return null to force redirect to login
+      const { getCurrentUser } = await import('../auth/session')
+      const user = await getCurrentUser()
+      
+      if (user) {
+        return {
+          data: { user },
+          error: null
+        }
+      }
+      
+      return {
+        data: { user: null },
+        error: { message: 'Not authenticated' }
+      }
+    },
+    signOut: async () => {
+      const { clearAuthCookies } = await import('../auth/session')
+      await clearAuthCookies()
+      return { error: null }
+    }
+  }
 }
 
 // Create a singleton instance

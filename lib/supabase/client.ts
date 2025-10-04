@@ -51,5 +51,9 @@ export function createClient() {
 
   return {
     from: (table: string) => createChainableQuery(),
+    auth: {
+      getUser: () => Promise.resolve({ data: { user: null }, error: { message: 'Client-side auth not supported' } }),
+      signOut: () => Promise.resolve({ error: null }),
+    },
   };
 }
