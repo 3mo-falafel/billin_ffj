@@ -200,10 +200,15 @@ class DatabaseClient {
           }
         }
         
-        return {
-          ...builder,
-          then: (resolve: any, reject: any) => builder.execute().then(resolve, reject)
-        }
+        // Return the builder with all its chaining methods AND the then method for await
+        return new Proxy(builder, {
+          get(target: any, prop: string) {
+            if (prop === 'then') {
+              return (resolve: any, reject: any) => target.execute().then(resolve, reject)
+            }
+            return target[prop]
+          }
+        })
       },
       
       insert: async (data: any | any[], options?: InsertOptions) => {
