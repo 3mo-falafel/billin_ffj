@@ -7,6 +7,8 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const { email, password } = body
 
+    console.log('Login attempt for:', email)
+
     if (!email || !password) {
       return NextResponse.json(
         { error: 'Email and password are required' },
@@ -18,14 +20,19 @@ export async function POST(request: NextRequest) {
     const result = await signIn(email, password)
 
     if (!result) {
+      console.log('Login failed: Invalid credentials')
       return NextResponse.json(
         { error: 'Invalid email or password' },
         { status: 401 }
       )
     }
 
+    console.log('Login successful for user:', result.user.email)
+
     // Set authentication cookies
     await setAuthCookies(result.tokens.accessToken, result.tokens.refreshToken)
+
+    console.log('Cookies set successfully')
 
     // Return success response
     return NextResponse.json({

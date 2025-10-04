@@ -31,6 +31,7 @@ export default function AdminLoginPage() {
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'include', // Important: include cookies in the request
         body: JSON.stringify({ email, password }),
       })
 
@@ -40,8 +41,10 @@ export default function AdminLoginPage() {
         throw new Error(data.error || 'Login failed')
       }
 
-      // Success! Use window.location for full page reload to ensure cookies are set
-      window.location.href = "/admin"
+      // Wait a moment for cookies to be set, then redirect with full page reload
+      setTimeout(() => {
+        window.location.href = "/admin"
+      }, 100)
     } catch (error: unknown) {
       setError(error instanceof Error ? error.message : "An error occurred")
       setIsLoading(false)

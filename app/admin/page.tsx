@@ -1,4 +1,6 @@
 import { createClient } from "@/lib/supabase/server"
+import { getCurrentUser } from "@/lib/auth/session"
+import { redirect } from "next/navigation"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -9,6 +11,13 @@ export const dynamic = 'force-dynamic'
 export const revalidate = 0
 
 export default async function AdminDashboard() {
+  // Check authentication
+  const user = await getCurrentUser()
+  
+  if (!user) {
+    redirect('/auth/admin-login')
+  }
+  
   const supabase = await createClient()
 
   // Aggregate counts + fetch recent content (limit small for dashboard)

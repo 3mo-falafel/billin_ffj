@@ -37,11 +37,15 @@ export async function getCurrentUser(): Promise<User | null> {
     const cookieStore = await cookies()
     const token = cookieStore.get(SESSION_COOKIE_NAME)?.value
 
+    console.log('getCurrentUser - Token exists:', !!token)
+
     if (!token) {
+      console.log('getCurrentUser - No token found')
       return null
     }
 
     const user = verifyToken(token)
+    console.log('getCurrentUser - User verified:', user ? user.email : 'null')
     return user
   } catch (error) {
     console.error('Get current user error:', error)
