@@ -12,7 +12,7 @@ const poolConfig: PoolConfig = {
   password: process.env.DATABASE_PASSWORD || '',
   max: 20, // Maximum number of clients in the pool
   idleTimeoutMillis: 30000, // Close idle clients after 30 seconds
-  connectionTimeoutMillis: 2000, // Return an error after 2 seconds if connection could not be established
+  connectionTimeoutMillis: 10000, // Return an error after 10 seconds if connection could not be established
   ssl: process.env.DATABASE_SSL === 'true' ? { rejectUnauthorized: false } : false,
 }
 
