@@ -168,9 +168,38 @@ class QueryBuilder {
 class DatabaseClient {
   from(table: string) {
     return {
-      select: (columns: string = '*') => {
+      select: (columns: string = '*', options?: { count?: 'exact' | 'planned' | 'estimated'; head?: boolean }) => {
         const builder = new QueryBuilder(table)
         builder.select(columns)
+        
+        // If head: true is specified, we only want the count, not the actual data
+        if (options?.head && options?.count) {
+          return {
+            then: async (resolve: any, reject: any) => {
+              try {
+                const countSql = `SELECT COUNT(*) as count FROM ${table}`
+                const result = await query(countSql, [])
+                resolve({
+                  data: null,
+                  error: null,
+                  count: parseInt(result.rows[0].count, 10)
+                })
+              } catch (error: any) {
+                resolve({
+                  data: null,
+                  error: {
+                    message: error.message,
+                    details: error.detail,
+                    hint: error.hint,
+                    code: error.code
+                  },
+                  count: null
+                })
+              }
+            }
+          }
+        }
+        
         return {
           ...builder,
           then: (resolve: any, reject: any) => builder.execute().then(resolve, reject)
