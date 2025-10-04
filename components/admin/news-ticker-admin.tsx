@@ -14,10 +14,10 @@ import { Plus, Edit, Trash2, Save, X, Eye, EyeOff } from "lucide-react"
 
 interface NewsTickerItem {
   id: string
-  text_en: string
-  text_ar: string
+  message_en: string
+  message_ar: string
   is_active: boolean
-  order_index: number
+  display_order: number
   created_at: string
 }
 
@@ -29,10 +29,10 @@ export function NewsTickerAdmin() {
   const { toast } = useToast()
 
   const [formData, setFormData] = useState({
-    text_en: "",
-    text_ar: "",
+    message_en: "",
+    message_ar: "",
     is_active: true,
-    order_index: 0
+    display_order: 0
   })
 
   useEffect(() => {
@@ -46,7 +46,7 @@ export function NewsTickerAdmin() {
       const { data, error } = await supabase
         .from("news_ticker")
         .select("*")
-        .order("order_index", { ascending: true })
+        .order("display_order", { ascending: true })
       
       if (error) throw error
       setItems(data || [])
@@ -70,10 +70,10 @@ export function NewsTickerAdmin() {
         const { error } = await supabase
           .from("news_ticker")
           .update({
-            text_en: formData.text_en,
-            text_ar: formData.text_ar,
+            message_en: formData.message_en,
+            message_ar: formData.message_ar,
             is_active: formData.is_active,
-            order_index: formData.order_index
+            display_order: formData.display_order
           })
           .eq("id", editingItem.id)
         
@@ -88,10 +88,10 @@ export function NewsTickerAdmin() {
         const { error } = await supabase
           .from("news_ticker")
           .insert([{
-            text_en: formData.text_en,
-            text_ar: formData.text_ar,
+            message_en: formData.message_en,
+            message_ar: formData.message_ar,
             is_active: formData.is_active,
-            order_index: formData.order_index || items.length
+            display_order: formData.display_order || items.length
           }])
         
         if (error) throw error
@@ -116,7 +116,7 @@ export function NewsTickerAdmin() {
   async function deleteItem(id: string) {
     try {
       const supabase = createClient()
-      const { error } = await supabase
+      const { error} = await supabase
         .from("news_ticker")
         .delete()
         .eq("id", id)
@@ -160,10 +160,10 @@ export function NewsTickerAdmin() {
   function editItem(item: NewsTickerItem) {
     setEditingItem(item)
     setFormData({
-      text_en: item.text_en,
-      text_ar: item.text_ar,
+      message_en: item.message_en,
+      message_ar: item.message_ar,
       is_active: item.is_active,
-      order_index: item.order_index
+      display_order: item.display_order
     })
     setIsCreating(true)
   }
@@ -172,10 +172,10 @@ export function NewsTickerAdmin() {
     setEditingItem(null)
     setIsCreating(false)
     setFormData({
-      text_en: "",
-      text_ar: "",
+      message_en: "",
+      message_ar: "",
       is_active: true,
-      order_index: 0
+      display_order: 0
     })
   }
 
@@ -217,22 +217,22 @@ export function NewsTickerAdmin() {
           <CardContent className="space-y-4">
             <div className="grid md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="text_en">English Text</Label>
+                <Label htmlFor="message_en">English Text</Label>
                 <Textarea
-                  id="text_en"
+                  id="message_en"
                   placeholder="Enter news text in English..."
-                  value={formData.text_en}
-                  onChange={(e) => setFormData({ ...formData, text_en: e.target.value })}
+                  value={formData.message_en}
+                  onChange={(e) => setFormData({ ...formData, message_en: e.target.value })}
                   rows={3}
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="text_ar">Arabic Text</Label>
+                <Label htmlFor="message_ar">Arabic Text</Label>
                 <Textarea
-                  id="text_ar"
+                  id="message_ar"
                   placeholder="أدخل نص الخبر باللغة العربية..."
-                  value={formData.text_ar}
-                  onChange={(e) => setFormData({ ...formData, text_ar: e.target.value })}
+                  value={formData.message_ar}
+                  onChange={(e) => setFormData({ ...formData, message_ar: e.target.value })}
                   className="text-right arabic-text"
                   rows={3}
                 />
@@ -250,12 +250,12 @@ export function NewsTickerAdmin() {
               </div>
               
               <div className="flex items-center gap-2">
-                <Label htmlFor="order_index">Order:</Label>
+                <Label htmlFor="display_order">Order:</Label>
                 <Input
-                  id="order_index"
+                  id="display_order"
                   type="number"
-                  value={formData.order_index}
-                  onChange={(e) => setFormData({ ...formData, order_index: parseInt(e.target.value) || 0 })}
+                  value={formData.display_order}
+                  onChange={(e) => setFormData({ ...formData, display_order: parseInt(e.target.value) || 0 })}
                   className="w-20"
                 />
               </div>
@@ -296,11 +296,11 @@ export function NewsTickerAdmin() {
                       <Badge variant={item.is_active ? "default" : "secondary"}>
                         {item.is_active ? "Active" : "Inactive"}
                       </Badge>
-                      <Badge variant="outline">Order: {item.order_index}</Badge>
+                      <Badge variant="outline">Order: {item.display_order}</Badge>
                     </div>
                     <div className="space-y-1">
-                      <p className="font-medium">English: {item.text_en}</p>
-                      <p className="text-right arabic-text text-muted-foreground">Arabic: {item.text_ar}</p>
+                      <p className="font-medium">English: {item.message_en}</p>
+                      <p className="text-right arabic-text text-muted-foreground">Arabic: {item.message_ar}</p>
                     </div>
                     <p className="text-xs text-muted-foreground">
                       Created: {new Date(item.created_at).toLocaleDateString()}
