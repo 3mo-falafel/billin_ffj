@@ -9,6 +9,9 @@ import { MissionVisionValues } from "@/components/about/mission-vision-values"
 import { HomepageGallery } from "@/components/homepage-gallery"
 import { Footer } from "@/components/footer"
 
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
 export default function HomePage() {
   return (
     <main className="min-h-screen">

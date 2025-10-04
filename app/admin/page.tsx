@@ -5,6 +5,9 @@ import { Badge } from "@/components/ui/badge"
 import { Calendar, Newspaper, ImageIcon, Plus, Users, TrendingUp, Eye, Star, Clock, Scissors, Package } from "lucide-react"
 import Link from "next/link"
 
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
 export default async function AdminDashboard() {
   const supabase = await createClient()
 

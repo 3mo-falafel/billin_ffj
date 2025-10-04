@@ -6,6 +6,9 @@ import { Scissors, ShoppingBag, Plus, Edit, Trash2, Star, ImageIcon } from "luci
 import Link from "next/link"
 import { DeleteCraftButton, ToggleFeaturedButton } from "./components"
 
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
 export default async function CraftsAdminPage() {
   const supabase = await createClient()
 
