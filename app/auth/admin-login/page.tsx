@@ -54,11 +54,12 @@ export default function AdminLoginPage() {
 
       console.log('✅ Login successful, redirecting to /admin')
       
-      // Wait a moment for cookies to be set, then redirect with full page reload
-      setTimeout(() => {
-        console.log('✅ Now redirecting...')
-        window.location.href = "/admin"
-      }, 100)
+      // Wait for cookies to be properly set before redirecting
+      // Use a longer delay to ensure cookies are persisted
+      await new Promise(resolve => setTimeout(resolve, 500))
+      
+      console.log('✅ Now redirecting to:', data.redirectTo || '/admin')
+      window.location.href = data.redirectTo || "/admin"
     } catch (error: unknown) {
       console.error('🔴 Login error caught:', error)
       setError(error instanceof Error ? error.message : "An error occurred")

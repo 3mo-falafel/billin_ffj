@@ -34,9 +34,10 @@ export async function POST(request: NextRequest) {
 
     console.log('Cookies set successfully')
 
-    // Return success response
+    // Return success response with redirect URL
     return NextResponse.json({
       success: true,
+      redirectTo: '/admin',
       user: {
         id: result.user.id,
         email: result.user.email,
