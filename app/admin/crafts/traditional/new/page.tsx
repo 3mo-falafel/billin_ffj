@@ -4,6 +4,8 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { TraditionalForm } from "../components/traditional-form"
 
+export const dynamic = 'force-dynamic'
+
 export default function NewTraditionalPage() {
   return (
     <div className="space-y-6 relative">

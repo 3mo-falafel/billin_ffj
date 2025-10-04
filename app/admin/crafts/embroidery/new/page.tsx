@@ -4,6 +4,8 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { EmbroideryForm } from "../components/embroidery-form"
 
+export const dynamic = 'force-dynamic'
+
 export default function NewEmbroideryPage() {
   return (
     <div className="space-y-6">

@@ -1,5 +1,7 @@
 import { NewsForm } from "@/components/admin/news-form"
 
+export const dynamic = 'force-dynamic'
+
 export default function NewNewsPage() {
   return (
     <div className="space-y-6">
