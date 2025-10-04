@@ -29,11 +29,12 @@ export async function loginAction(formData: FormData) {
     await setAuthCookies(result.tokens.accessToken, result.tokens.refreshToken)
 
     console.log('✅ Server Action - Cookies set successfully')
-
-    // Redirect happens server-side
-    redirect('/admin')
   } catch (error) {
-    console.error('🔴 Server Action - Login error:', error)
+    console.error('🔴 Server Action - Authentication error:', error)
     return { error: 'An error occurred during login' }
   }
+
+  // Redirect happens server-side (this throws a special NEXT_REDIRECT error which is normal)
+  redirect('/admin')
 }
+
