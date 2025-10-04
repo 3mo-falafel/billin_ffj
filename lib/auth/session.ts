@@ -10,22 +10,33 @@ const REFRESH_COOKIE_NAME = 'refresh_token'
 export async function setAuthCookies(accessToken: string, refreshToken: string) {
   const cookieStore = await cookies()
   
+  const isProduction = process.env.NODE_ENV === 'production'
+  
   // Set access token cookie (7 days)
   cookieStore.set(SESSION_COOKIE_NAME, accessToken, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
+    secure: isProduction,
     sameSite: 'lax',
     maxAge: 60 * 60 * 24 * 7, // 7 days
-    path: '/'
+    path: '/',
+    domain: undefined, // Let the browser determine the domain
   })
 
   // Set refresh token cookie (30 days)
   cookieStore.set(REFRESH_COOKIE_NAME, refreshToken, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
+    secure: isProduction,
     sameSite: 'lax',
     maxAge: 60 * 60 * 24 * 30, // 30 days
-    path: '/'
+    path: '/',
+    domain: undefined, // Let the browser determine the domain
+  })
+  
+  console.log('Cookies set with options:', {
+    httpOnly: true,
+    secure: isProduction,
+    sameSite: 'lax',
+    path: '/',
   })
 }
 
