@@ -6,13 +6,13 @@
 -- ================================================================
 -- 1. CREATE DEFAULT ADMIN USER
 -- ================================================================
--- Password: "admin123" (hashed with bcrypt)
--- You should change this immediately after first login
+-- Email: ffjisk@billin.org
+-- Password: "iyadSK2008" (hashed with bcrypt)
 INSERT INTO admin_users (email, password_hash, role, is_active)
 VALUES (
-  'admin@bilin-website.com',
-  -- This is bcrypt hash of "admin123" - CHANGE THIS IN PRODUCTION
-  '$2a$10$rLhqXt68d3WqsYVDp5MzLODjbF8LMKbNBz9FUqD5YPXBzL.Hx0Kyu',
+  'ffjisk@billin.org',
+  -- This is bcrypt hash of "iyadSK2008"
+  '$2a$10$WMZpPYYt6XMOyArZF//fFO27.UrLLS2ZF9XUqdPNv8Fb2ZAnS2jUS',
   'admin',
   true
 )

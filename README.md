@@ -104,12 +104,12 @@ npm run dev
 
 After running the seed data:
 
-- **Email:** `admin@bilin-website.com`
-- **Password:** `admin123`
+- **Email:** `ffjisk@billin.org`
+- **Password:** `iyadSK2008`
 
-**⚠️ Change this password immediately!**
+**⚠️ Keep this password secure!**
 
-Generate a new password hash:
+To change the password, generate a new password hash:
 
 ```bash
 npm run hash:password YourNewPassword123
@@ -120,7 +120,7 @@ Then update in database:
 ```sql
 UPDATE admin_users 
 SET password_hash = 'generated-hash-here' 
-WHERE email = 'admin@bilin-website.com';
+WHERE email = 'ffjisk@billin.org';
 ```
 
 ## 📚 Documentation
