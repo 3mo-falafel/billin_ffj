@@ -40,12 +40,10 @@ export default function AdminLoginPage() {
         throw new Error(data.error || 'Login failed')
       }
 
-      // Success! Redirect to admin dashboard
-      router.push("/admin")
-      router.refresh() // Refresh to update session
+      // Success! Use window.location for full page reload to ensure cookies are set
+      window.location.href = "/admin"
     } catch (error: unknown) {
       setError(error instanceof Error ? error.message : "An error occurred")
-    } finally {
       setIsLoading(false)
     }
   }
