@@ -21,10 +21,16 @@ export default function AdminLoginPage() {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
+    console.log('🔵 handleLogin called - form submitted')
+    console.log('🔵 Email:', email)
+    console.log('🔵 Password length:', password.length)
+    
     setIsLoading(true)
     setError(null)
 
     try {
+      console.log('🔵 About to fetch /api/auth/login')
+      
       // Call our custom login API endpoint
       const response = await fetch('/api/auth/login', {
         method: 'POST',
@@ -35,17 +41,26 @@ export default function AdminLoginPage() {
         body: JSON.stringify({ email, password }),
       })
 
+      console.log('🔵 Response status:', response.status)
+      console.log('🔵 Response headers:', Object.fromEntries(response.headers.entries()))
+
       const data = await response.json()
+      console.log('🔵 Response data:', data)
 
       if (!response.ok) {
+        console.log('🔴 Login failed:', data.error)
         throw new Error(data.error || 'Login failed')
       }
 
+      console.log('✅ Login successful, redirecting to /admin')
+      
       // Wait a moment for cookies to be set, then redirect with full page reload
       setTimeout(() => {
+        console.log('✅ Now redirecting...')
         window.location.href = "/admin"
       }, 100)
     } catch (error: unknown) {
+      console.error('🔴 Login error caught:', error)
       setError(error instanceof Error ? error.message : "An error occurred")
       setIsLoading(false)
     }
