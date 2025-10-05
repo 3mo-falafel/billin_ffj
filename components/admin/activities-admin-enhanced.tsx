@@ -183,30 +183,62 @@ export default function ActivitiesAdminEnhanced() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    setIsTranslating(true) // Using this as loading state
     
-    const activityData = {
-      ...formData,
-      title_ar: translations.title_ar,
-      description_ar: translations.description_ar,
-      id: editingActivity?.id || Date.now().toString()
-    }
+    try {
+      // Prepare data for API (matching the database schema)
+      const apiData = {
+        title_en: formData.title_en,
+        title_ar: translations.title_ar,
+        description_en: formData.description_en,
+        description_ar: translations.description_ar,
+        image_url: formData.images.length > 0 ? formData.images[0] : null,
+        video_url: null, // Can be extended later
+        date: formData.date,
+        is_active: formData.status === 'published'
+      }
 
-    if (editingActivity) {
-      // Update existing activity
-      setActivities(prev => prev.map(act => 
-        act.id === editingActivity.id ? { ...act, ...activityData } : act
-      ))
-    } else {
-      // Add new activity
-      setActivities(prev => [...prev, { 
-        ...activityData, 
-        created_at: new Date().toISOString() 
-      } as Activity])
-    }
+      console.log('🔍 ACTIVITIES ADMIN DEBUG - Submitting data:', apiData)
 
-    resetForm()
-    setShowAddDialog(false)
-    setEditingActivity(null)
+      // Get API client
+      const { createClient } = await import('@/lib/api/client')
+      const api = createClient()
+
+      if (editingActivity) {
+        // Update existing activity
+        console.log('🔍 ACTIVITIES ADMIN DEBUG - Updating activity:', editingActivity.id)
+        const { error } = await api.activities.update(editingActivity.id, apiData)
+        
+        if (error) {
+          throw new Error(error.message)
+        }
+        
+        console.log('🔍 ACTIVITIES ADMIN DEBUG - Update successful')
+      } else {
+        // Create new activity
+        console.log('🔍 ACTIVITIES ADMIN DEBUG - Creating new activity')
+        const { error } = await api.activities.create(apiData)
+        
+        if (error) {
+          throw new Error(error.message)
+        }
+        
+        console.log('🔍 ACTIVITIES ADMIN DEBUG - Create successful')
+      }
+
+      // Reload activities from database
+      await loadActivities()
+      
+      resetForm()
+      setShowAddDialog(false)
+      setEditingActivity(null)
+      
+    } catch (error: any) {
+      console.error('🔍 ACTIVITIES ADMIN DEBUG - Error submitting:', error)
+      alert(`Error: ${error.message || 'Failed to save activity'}`)
+    } finally {
+      setIsTranslating(false)
+    }
   }
 
   const resetForm = () => {
@@ -247,6 +279,8 @@ export default function ActivitiesAdminEnhanced() {
   const handleDelete = async (id: string) => {
     if (confirm('Are you sure you want to delete this activity?')) {
       try {
+        console.log('🔍 ACTIVITIES ADMIN DEBUG - Deleting activity:', id)
+        
         // Delete from database
         const { createClient } = await import('@/lib/api/client')
         const api = createClient()
@@ -254,15 +288,18 @@ export default function ActivitiesAdminEnhanced() {
         const { error } = await api.activities.delete(id)
         
         if (error) {
-          console.error('Error deleting activity:', error)
+          console.error('🔍 ACTIVITIES ADMIN DEBUG - Delete error:', error)
           alert('Failed to delete activity. Please try again.')
           return
         }
         
-        // Remove from local state
-        setActivities(prev => prev.filter(act => act.id !== id))
+        console.log('🔍 ACTIVITIES ADMIN DEBUG - Delete successful')
+        
+        // Reload activities from database
+        await loadActivities()
+        
       } catch (error) {
-        console.error('Error deleting activity:', error)
+        console.error('🔍 ACTIVITIES ADMIN DEBUG - Delete exception:', error)
         alert('Failed to delete activity. Please try again.')
       }
     }

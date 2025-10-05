@@ -35,17 +35,46 @@ export function ActivitiesList() {
   async function loadActivities() {
     try {
       setLoading(true)
-      const response = await fetch('/api/activities')
-      const result = await response.json()
+      console.log('🔍 ACTIVITIES LIST DEBUG - Loading activities from API...')
       
-      if (result.success) {
-        setActivities(result.data || [])
-      } else {
-        setError(result.error || 'Failed to load activities')
+      const response = await fetch('/api/activities?active=true')
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
       }
-    } catch (error) {
-      console.error('Error loading activities:', error)
-      setError('Failed to load activities')
+      
+      const result = await response.json()
+      console.log('🔍 ACTIVITIES LIST DEBUG - API response:', result)
+      
+      // Our API returns { data: [...] } format, not { success: true, data: [...] }
+      if (result.data) {
+        // Transform the database data to match expected interface
+        const transformedActivities = result.data.map((activity: any) => ({
+          id: activity.id,
+          title_en: activity.title_en,
+          title_ar: activity.title_ar,
+          description_en: activity.description_en,
+          description_ar: activity.description_ar,
+          category: 'community', // Default category since DB doesn't have this field
+          location_en: 'Bil\'in Village', // Default location
+          location_ar: 'قرية بلعين', // Default location in Arabic
+          date: activity.date,
+          participants: 50, // Default participants
+          image_url: activity.image_url,
+          is_featured: false, // Default to false since DB doesn't have this field
+          created_at: activity.created_at
+        }))
+        
+        console.log('🔍 ACTIVITIES LIST DEBUG - Transformed activities:', transformedActivities)
+        setActivities(transformedActivities)
+      } else if (result.error) {
+        setError(result.error)
+      } else {
+        setError('Unexpected response format')
+      }
+    } catch (error: any) {
+      console.error('🔍 ACTIVITIES LIST DEBUG - Error loading activities:', error)
+      setError(`Failed to load activities: ${error.message}`)
     } finally {
       setLoading(false)
     }
