@@ -128,15 +128,12 @@ export default function ActivitiesAdminEnhanced() {
     try {
       console.log('🔍 ADMIN ACTIVITIES DEBUG - Loading activities...')
       
-      // Get Supabase client
-      const { createClient } = await import('@/lib/supabase/client')
-      const supabase = createClient()
+      // Get API client
+      const { createClient } = await import('@/lib/api/client')
+      const api = createClient()
       
       // Fetch real activities from database
-      const { data, error } = await supabase
-        .from('activities')
-        .select('*')
-        .order('created_at', { ascending: false })
+      const { data, error } = await api.activities.getAll()
       
       console.log('🔍 ADMIN ACTIVITIES DEBUG - Raw data from DB:', data)
       console.log('🔍 ADMIN ACTIVITIES DEBUG - Error from DB:', error)
@@ -251,13 +248,10 @@ export default function ActivitiesAdminEnhanced() {
     if (confirm('Are you sure you want to delete this activity?')) {
       try {
         // Delete from database
-        const { createClient } = await import('@/lib/supabase/client')
-        const supabase = createClient()
+        const { createClient } = await import('@/lib/api/client')
+        const api = createClient()
         
-        const { error } = await supabase
-          .from('activities')
-          .delete()
-          .eq('id', id)
+        const { error } = await api.activities.delete(id)
         
         if (error) {
           console.error('Error deleting activity:', error)

@@ -102,15 +102,11 @@ function GalleryAdminSimple() {
 
   const loadData = async () => {
     try {
-      const { createClient } = await import('@/lib/supabase/client')
-      const supabase = createClient()
+      const { createClient } = await import('@/lib/api/client')
+      const api = createClient()
       
       // Load photo albums
-      const { data: photoData, error: photoError } = await supabase
-        .from('gallery')
-        .select('*')
-        .eq('media_type', 'image')
-        .order('created_at', { ascending: false })
+      const { data: photoData, error: photoError } = await api.gallery.getAll({ media_type: 'image' })
       
       if (photoError) {
         console.error('Error loading photos:', photoError)
@@ -139,11 +135,7 @@ function GalleryAdminSimple() {
       }
 
       // Load videos
-      const { data: videoData, error: videoError } = await supabase
-        .from('gallery')
-        .select('*')
-        .eq('media_type', 'video')
-        .order('created_at', { ascending: false })
+      const { data: videoData, error: videoError } = await api.gallery.getAll({ media_type: 'video' })
       
       if (videoError) {
         console.error('Error loading videos:', videoError)

@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { createClient } from "@/lib/supabase/client"
+import { createClient } from "@/lib/api/client"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
@@ -57,15 +57,12 @@ export function NewsAdmin() {
 
   const fetchArticles = async () => {
     try {
-      const supabase = createClient()
-      const { data, error } = await supabase
-        .from("news")
-        .select("*")
-        .order("date", { ascending: false })
+      const api = createClient()
+      const { data, error } = await api.news.getAll()
 
-      if (error) throw error
+      if (error) throw new Error(error.message)
       setArticles(data || [])
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error fetching articles:", error)
       toast({
         title: "Error",
@@ -82,26 +79,21 @@ export function NewsAdmin() {
     setUploading(true)
 
     try {
-      const supabase = createClient()
+      const api = createClient()
       
       if (editingArticle) {
-        const { error } = await supabase
-          .from("news")
-          .update(formData)
-          .eq("id", editingArticle.id)
+        const { error } = await api.news.update(editingArticle.id, formData)
 
-        if (error) throw error
+        if (error) throw new Error(error.message)
         
         toast({
           title: "Success",
           description: "Article updated successfully"
         })
       } else {
-        const { error } = await supabase
-          .from("news")
-          .insert([formData])
+        const { error } = await api.news.create(formData)
 
-        if (error) throw error
+        if (error) throw new Error(error.message)
         
         toast({
           title: "Success",
@@ -113,11 +105,11 @@ export function NewsAdmin() {
       resetForm()
       setShowForm(false)
       setEditingArticle(null)
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error saving article:", error)
       toast({
         title: "Error",
-        description: "Failed to save article",
+        description: error.message || "Failed to save article",
         variant: "destructive"
       })
     } finally {
@@ -143,24 +135,21 @@ export function NewsAdmin() {
 
   const handleDelete = async (id: string) => {
     try {
-      const supabase = createClient()
-      const { error } = await supabase
-        .from("news")
-        .delete()
-        .eq("id", id)
+      const api = createClient()
+      const { error } = await api.news.delete(id)
 
-      if (error) throw error
+      if (error) throw new Error(error.message)
       
       fetchArticles()
       toast({
         title: "Success",
         description: "Article deleted successfully"
       })
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error deleting article:", error)
       toast({
         title: "Error",
-        description: "Failed to delete article",
+        description: error.message || "Failed to delete article",
         variant: "destructive"
       })
     }
