@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { createClient } from "@/lib/supabase/client"
+// API calls will use fetch instead of Supabase
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -41,13 +41,18 @@ export function NewsTable({ news }: NewsTableProps) {
   const [isDeleting, setIsDeleting] = useState<string | null>(null)
   const [isTogglingFeatured, setIsTogglingFeatured] = useState<string | null>(null)
   const router = useRouter()
-  const supabase = createClient()
 
   const handleDelete = async (id: string) => {
     setIsDeleting(id)
     try {
-      const { error } = await supabase.from("news").delete().eq("id", id)
-      if (error) throw error
+      const response = await fetch(`/api/news/${id}`, {
+        method: 'DELETE'
+      })
+      
+      if (!response.ok) {
+        throw new Error(`Failed to delete news: ${await response.text()}`)
+      }
+      
       router.refresh()
     } catch (error) {
       console.error("Error deleting news:", error)
@@ -59,8 +64,18 @@ export function NewsTable({ news }: NewsTableProps) {
   const toggleFeatured = async (id: string, currentFeatured: boolean) => {
     setIsTogglingFeatured(id)
     try {
-      const { error } = await supabase.from("news").update({ featured: !currentFeatured }).eq("id", id)
-      if (error) throw error
+      const response = await fetch(`/api/news/${id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ featured: !currentFeatured })
+      })
+      
+      if (!response.ok) {
+        throw new Error(`Failed to toggle featured: ${await response.text()}`)
+      }
+      
       router.refresh()
     } catch (error) {
       console.error("Error toggling featured:", error)

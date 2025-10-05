@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { createClient } from "@/lib/api/client"
+// API calls will use fetch instead of Supabase
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -39,13 +39,18 @@ interface ActivitiesTableProps {
 export function ActivitiesTable({ activities }: ActivitiesTableProps) {
   const [isDeleting, setIsDeleting] = useState<string | null>(null)
   const router = useRouter()
-  const supabase = createClient()
 
   const handleDelete = async (id: string) => {
     setIsDeleting(id)
     try {
-      const { error } = await supabase.from("activities").delete().eq("id", id)
-      if (error) throw error
+      const response = await fetch(`/api/activities/${id}`, {
+        method: 'DELETE'
+      })
+      
+      if (!response.ok) {
+        throw new Error(`Failed to delete activity: ${await response.text()}`)
+      }
+      
       router.refresh()
     } catch (error) {
       console.error("Error deleting activity:", error)

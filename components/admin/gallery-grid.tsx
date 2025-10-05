@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { createClient } from "@/lib/supabase/client"
+// API calls will use fetch instead of Supabase
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -51,13 +51,18 @@ export function GalleryGrid({ gallery }: GalleryGridProps) {
   const [isDeleting, setIsDeleting] = useState<string | null>(null)
   const [selectedCategory, setSelectedCategory] = useState("all")
   const router = useRouter()
-  const supabase = createClient()
 
   const handleDelete = async (id: string) => {
     setIsDeleting(id)
     try {
-      const { error } = await supabase.from("gallery").delete().eq("id", id)
-      if (error) throw error
+      const response = await fetch(`/api/gallery/${id}`, {
+        method: 'DELETE'
+      })
+      
+      if (!response.ok) {
+        throw new Error(`Failed to delete gallery item: ${await response.text()}`)
+      }
+      
       router.refresh()
     } catch (error) {
       console.error("Error deleting gallery item:", error)

@@ -1,10 +1,13 @@
 "use client"
 
-import { createClient } from "@/lib/api/client"
+// API calls will use fetch instead of Supabase
 import { Button } from "@/components/ui/button"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
-import type { User } from "@supabase/supabase-js"
+// Using custom User type instead of Supabase
+interface User {
+  email: string;
+}
 import { LogOut, Home, Calendar, Newspaper, ImageIcon, GraduationCap, Scroll, Users, Package, Images } from "lucide-react"
 
 interface AdminNavigationProps {
@@ -13,11 +16,21 @@ interface AdminNavigationProps {
 
 export function AdminNavigation({ user }: AdminNavigationProps) {
   const router = useRouter()
-  const supabase = createClient()
 
   const handleSignOut = async () => {
-    await supabase.auth.signOut()
-    router.push("/")
+    try {
+      const response = await fetch('/api/auth/logout', {
+        method: 'POST'
+      })
+      
+      if (response.ok) {
+        router.push("/")
+      } else {
+        console.error('Logout failed')
+      }
+    } catch (error) {
+      console.error('Logout error:', error)
+    }
   }
 
   return (

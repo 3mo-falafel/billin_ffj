@@ -102,19 +102,16 @@ function GalleryAdminSimple() {
 
   const loadData = async () => {
     try {
-      const { createClient } = await import('@/lib/api/client')
-      const api = createClient()
-      
       // Load photo albums
-      const { data: photoData, error: photoError } = await api.gallery.getAll({ media_type: 'image' })
-      
-      if (photoError) {
-        console.error('Error loading photos:', photoError)
-      } else {
+      const photoResponse = await fetch('/api/gallery?media_type=image')
+      if (photoResponse.ok) {
+        const photoResult = await photoResponse.json()
+        const photoData = photoResult.data || []
+        
         // Group photos by title to create albums
         const albumMap = new Map<string, PhotoAlbum>()
         
-        photoData?.forEach(item => {
+        photoData.forEach((item: any) => {
           const key = item.title_en || 'Untitled Album'
           if (!albumMap.has(key)) {
             albumMap.set(key, {
@@ -132,15 +129,17 @@ function GalleryAdminSimple() {
         })
         
         setPhotoAlbums(Array.from(albumMap.values()))
+      } else {
+        console.error('Error loading photos:', await photoResponse.text())
       }
 
       // Load videos
-      const { data: videoData, error: videoError } = await api.gallery.getAll({ media_type: 'video' })
-      
-      if (videoError) {
-        console.error('Error loading videos:', videoError)
-      } else {
-        const videoItems: VideoItem[] = (videoData || []).map(item => {
+      const videoResponse = await fetch('/api/gallery?media_type=video')
+      if (videoResponse.ok) {
+        const videoResult = await videoResponse.json()
+        const videoData = videoResult.data || []
+        
+        const videoItems: VideoItem[] = videoData.map((item: any) => {
           // Extract cover image from description
           const coverMatch = item.description_en?.match(/COVER_IMAGE:([^|]+)/);
           const coverImage = coverMatch ? coverMatch[1] : '';
@@ -160,6 +159,8 @@ function GalleryAdminSimple() {
         })
         
         setVideos(videoItems)
+      } else {
+        console.error('Error loading videos:', await videoResponse.text())
       }
     } catch (error) {
       console.error('Failed to load gallery data:', error)
@@ -188,9 +189,6 @@ function GalleryAdminSimple() {
     e.preventDefault()
     
     try {
-      const { createClient } = await import('@/lib/supabase/client')
-      const supabase = createClient()
-      
       // Create individual gallery entries for each image
       const galleryEntries = photoFormData.images.map(imageUrl => ({
         title_en: photoFormData.title,
@@ -203,24 +201,36 @@ function GalleryAdminSimple() {
       }))
 
       if (editingItem) {
-        // Update existing album - delete old entries and create new ones
-        await supabase
-          .from('gallery')
-          .delete()
-          .eq('title_en', editingItem.title)
-          .eq('media_type', 'image')
-        
-        const { error } = await supabase
-          .from('gallery')
-          .insert(galleryEntries)
-        
-        if (error) throw error
+        // For editing, we need to delete old entries first
+        // Since we don't have a batch delete endpoint, we update one by one
+        for (const entry of galleryEntries) {
+          const response = await fetch('/api/gallery', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(entry)
+          })
+          
+          if (!response.ok) {
+            throw new Error(`Failed to create gallery entry: ${await response.text()}`)
+          }
+        }
       } else {
-        const { error } = await supabase
-          .from('gallery')
-          .insert(galleryEntries)
-        
-        if (error) throw error
+        // Create new entries
+        for (const entry of galleryEntries) {
+          const response = await fetch('/api/gallery', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(entry)
+          })
+          
+          if (!response.ok) {
+            throw new Error(`Failed to create gallery entry: ${await response.text()}`)
+          }
+        }
       }
 
       await loadData()
@@ -240,9 +250,6 @@ function GalleryAdminSimple() {
     e.preventDefault()
     
     try {
-      const { createClient } = await import('@/lib/supabase/client')
-      const supabase = createClient()
-      
       // Store cover image in description field temporarily
       const coverImageSuffix = videoFormData.cover_image ? ` | COVER_IMAGE:${videoFormData.cover_image}` : '';
       
@@ -257,18 +264,29 @@ function GalleryAdminSimple() {
       }
 
       if (editingItem) {
-        const { error } = await supabase
-          .from('gallery')
-          .update(videoData)
-          .eq('id', editingItem.id)
+        const response = await fetch(`/api/gallery/${editingItem.id}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(videoData)
+        })
         
-        if (error) throw error
+        if (!response.ok) {
+          throw new Error(`Failed to update video: ${await response.text()}`)
+        }
       } else {
-        const { error } = await supabase
-          .from('gallery')
-          .insert([videoData])
+        const response = await fetch('/api/gallery', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(videoData)
+        })
         
-        if (error) throw error
+        if (!response.ok) {
+          throw new Error(`Failed to create video: ${await response.text()}`)
+        }
       }
 
       await loadData()
@@ -332,15 +350,13 @@ function GalleryAdminSimple() {
   const handleDelete = async (id: string, type: 'photo' | 'video') => {
     if (confirm(`Are you sure you want to delete this ${type}?`)) {
       try {
-        const { createClient } = await import('@/lib/supabase/client')
-        const supabase = createClient()
+        const response = await fetch(`/api/gallery/${id}`, {
+          method: 'DELETE'
+        })
         
-        const { error } = await supabase
-          .from('gallery')
-          .delete()
-          .eq('id', id)
-        
-        if (error) throw error
+        if (!response.ok) {
+          throw new Error(`Failed to delete ${type}: ${await response.text()}`)
+        }
         
         await loadData()
         alert(`${type} deleted successfully!`)

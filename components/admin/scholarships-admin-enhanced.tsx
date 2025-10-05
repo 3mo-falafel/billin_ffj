@@ -135,25 +135,15 @@ export default function ScholarshipsAdminEnhanced() {
 
   const loadData = async () => {
     try {
-      const { createClient } = await import('@/lib/supabase/client')
-      const supabase = createClient()
-      
       // Load from database using the existing scholarships table
-      const { data, error } = await supabase
-        .from('scholarships')
-        .select('*')
-        .order('created_at', { ascending: false })
+      const response = await fetch('/api/scholarships')
       
-      if (error) {
-        console.error('Error loading scholarships:', error)
-        console.error('Error details:', JSON.stringify(error, null, 2))
-        
-        // Set empty arrays on error
-        setStudentsNeedingHelp([])
-        setAvailableScholarships([])
-        setHelpedStudents([])
-        return
+      if (!response.ok) {
+        throw new Error(`Failed to load scholarships: ${await response.text()}`)
       }
+      
+      const result = await response.json()
+      const data = result.data || []
       
       // Ensure data is an array
       const scholarshipData = Array.isArray(data) ? data : []
@@ -223,56 +213,12 @@ export default function ScholarshipsAdminEnhanced() {
       console.error('Error loading data:', error)
       console.error('Error details:', JSON.stringify(error, null, 2))
       
-      // Fallback to sample data if database fails
-      setStudentsNeedingHelp([
-        {
-          id: 'sample-1',
-          name: 'Ahmad Hassan',
-          age: 20,
-          university_name: 'Birzeit University',
-          amount_needed: 5000,
-          field_of_study: 'Computer Science',
-          year_of_study: '2nd Year',
-          why_need_scholarship: 'Financial difficulties due to family situation and need support to continue my studies',
-          contact_email: 'ahmad@example.com',
-          contact_phone: '+970-59-123-4567',
-          is_active: true,
-          donations_received: 1200,
-          created_at: new Date().toISOString()
-        }
-      ])
+      // Set empty arrays on error
+      setStudentsNeedingHelp([])
+      setAvailableScholarships([])
+      setHelpedStudents([])
       
-      setAvailableScholarships([
-        {
-          id: 'sample-2',
-          title: 'Excellence in STEM Scholarship',
-          description: 'Full scholarship for outstanding STEM students',
-          amount: 8000,
-          requirements: 'GPA 3.5+, STEM field, financial need',
-          deadline: '2024-12-31',
-          provider_name: 'Tech Foundation',
-          provider_email: 'scholarships@techfoundation.org',
-          provider_phone: '+1-555-0123',
-          max_applicants: 10,
-          current_applicants: 3,
-          is_active: true,
-          created_at: new Date().toISOString()
-        }
-      ])
-      
-      setHelpedStudents([
-        {
-          id: 'sample-3',
-          name: 'Fatima Al-Zahra',
-          university_name: 'American University of Beirut',
-          field_of_study: 'Medicine',
-          amount_received: 15000,
-          year_received: '2023',
-          success_story: 'Successfully completed first year of medical school with honors',
-          current_status: 'Medical Student - 2nd Year',
-          created_at: new Date().toISOString()
-        }
-      ])
+
     }
   }
 
@@ -364,9 +310,6 @@ export default function ScholarshipsAdminEnhanced() {
 
   const handleSubmit = async () => {
     try {
-      const { createClient } = await import('@/lib/supabase/client')
-      const supabase = createClient()
-      
       let scholarshipData: any = {}
       
       if (dialogType === 'student') {
@@ -419,18 +362,29 @@ export default function ScholarshipsAdminEnhanced() {
       }
       
       if (editingItem) {
-        const { error } = await supabase
-          .from('scholarships')
-          .update(scholarshipData)
-          .eq('id', editingItem.id)
+        const response = await fetch(`/api/scholarships/${editingItem.id}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(scholarshipData)
+        })
         
-        if (error) throw error
+        if (!response.ok) {
+          throw new Error(`Failed to update scholarship: ${await response.text()}`)
+        }
       } else {
-        const { error } = await supabase
-          .from('scholarships')
-          .insert([scholarshipData])
+        const response = await fetch('/api/scholarships', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(scholarshipData)
+        })
         
-        if (error) throw error
+        if (!response.ok) {
+          throw new Error(`Failed to create scholarship: ${await response.text()}`)
+        }
       }
       
       // Reload data from database
@@ -452,15 +406,13 @@ export default function ScholarshipsAdminEnhanced() {
   const handleDelete = async (type: 'student' | 'scholarship' | 'helped', id: string) => {
     if (confirm('Are you sure you want to delete this item?')) {
       try {
-        const { createClient } = await import('@/lib/supabase/client')
-        const supabase = createClient()
+        const response = await fetch(`/api/scholarships/${id}`, {
+          method: 'DELETE'
+        })
         
-        const { error } = await supabase
-          .from('scholarships')
-          .delete()
-          .eq('id', id)
-        
-        if (error) throw error
+        if (!response.ok) {
+          throw new Error(`Failed to delete scholarship: ${await response.text()}`)
+        }
         
         // Reload data from database
         await loadData()

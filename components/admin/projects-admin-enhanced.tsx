@@ -179,8 +179,7 @@ export default function ProjectsAdminEnhanced() {
 
   const handleSubmit = async () => {
     try {
-      const { createClient } = await import('@/lib/supabase/client')
-      const supabase = createClient()
+      // Using API fetch calls instead of Supabase
       
       const projectData = {
         name: formData.name,
@@ -254,7 +253,7 @@ export default function ProjectsAdminEnhanced() {
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || [])
     
-    // For now, create blob URLs for preview (in production, upload to Supabase storage)
+    // For now, create blob URLs for preview (in production, upload to cloud storage)
     const imageUrls = files.map(file => URL.createObjectURL(file))
     setFormData(prev => ({ ...prev, images: [...prev.images, ...imageUrls] }))
   }

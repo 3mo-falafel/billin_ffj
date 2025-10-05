@@ -489,7 +489,7 @@ export function NewsAdmin() {
                               // For now, create a temporary URL for preview
                               const imageUrl = URL.createObjectURL(file)
                               setFormData(prev => ({ ...prev, image_url: imageUrl }))
-                              // In production, you would upload to Supabase storage here
+                              // In production, you would upload to cloud storage here
                             } catch (error) {
                               console.error('Upload failed:', error)
                             } finally {

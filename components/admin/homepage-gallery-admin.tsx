@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { createClient } from "@/lib/supabase/client"
+// API calls will use fetch instead of Supabase
 import { Plus, Edit, Trash2, Save, X, Upload, MoveUp, MoveDown, ImageIcon } from "lucide-react"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 
@@ -45,7 +45,7 @@ export function AdminHomepageGallery() {
   const [uploading, setUploading] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  const supabase = createClient()
+  // Using API fetch calls instead of Supabase
 
   useEffect(() => {
     fetchGalleryItems()
@@ -53,16 +53,14 @@ export function AdminHomepageGallery() {
 
   const fetchGalleryItems = async () => {
     try {
-      const { data, error } = await supabase
-        .from('homepage_gallery')
-        .select('*')
-        .order('display_order', { ascending: true })
-
-      if (error) {
-        throw error
+      const response = await fetch('/api/homepage-gallery')
+      
+      if (!response.ok) {
+        throw new Error(`Failed to fetch homepage gallery: ${await response.text()}`)
       }
-
-      setGalleryItems(data || [])
+      
+      const result = await response.json()
+      setGalleryItems(result.data || [])
     } catch (error) {
       console.error('Error fetching gallery items:', error)
       showAlert('error', 'Failed to fetch gallery items')
@@ -116,23 +114,16 @@ export function AdminHomepageGallery() {
   }
 
   const handleFileUpload = async (file: File): Promise<string> => {
-    const fileExt = file.name.split('.').pop()
-    const fileName = `homepage-gallery-${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`
-    const filePath = `homepage-gallery/${fileName}`
-
-    const { error: uploadError } = await supabase.storage
-      .from('media')
-      .upload(filePath, file)
-
-    if (uploadError) {
-      throw uploadError
-    }
-
-    const { data } = supabase.storage
-      .from('media')
-      .getPublicUrl(filePath)
-
-    return data.publicUrl
+    // For now, create a blob URL for preview
+    // In production, implement proper file upload to your chosen storage solution
+    const url = URL.createObjectURL(file)
+    
+    // NOTE: This creates a temporary URL for preview only
+    // You'll need to implement actual file upload to a storage service
+    // like AWS S3, Cloudinary, or your own server
+    
+    console.warn('File upload not implemented - using blob URL for preview only')
+    return url
   }
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -198,28 +189,38 @@ export function AdminHomepageGallery() {
 
       if (editingId) {
         // Update existing item
-        const { error } = await supabase
-          .from('homepage_gallery')
-          .update({
+        const response = await fetch(`/api/homepage-gallery/${editingId}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
             title_en: finalFormData.title_en,
             title_ar: finalFormData.title_ar,
             image_url: finalFormData.image_url,
             alt_text: finalFormData.alt_text,
             display_order: finalFormData.display_order,
-            is_active: finalFormData.is_active,
-            updated_at: new Date().toISOString()
+            is_active: finalFormData.is_active
           })
-          .eq('id', editingId)
+        })
 
-        if (error) throw error
+        if (!response.ok) {
+          throw new Error(`Failed to update homepage gallery item: ${await response.text()}`)
+        }
         showAlert('success', 'Gallery item updated successfully')
       } else {
         // Add new item
-        const { error } = await supabase
-          .from('homepage_gallery')
-          .insert([finalFormData])
+        const response = await fetch('/api/homepage-gallery', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(finalFormData)
+        })
 
-        if (error) throw error
+        if (!response.ok) {
+          throw new Error(`Failed to create homepage gallery item: ${await response.text()}`)
+        }
         showAlert('success', 'Gallery item added successfully')
       }
 
@@ -237,12 +238,13 @@ export function AdminHomepageGallery() {
     }
 
     try {
-      const { error } = await supabase
-        .from('homepage_gallery')
-        .delete()
-        .eq('id', id)
+      const response = await fetch(`/api/homepage-gallery/${id}`, {
+        method: 'DELETE'
+      })
 
-      if (error) throw error
+      if (!response.ok) {
+        throw new Error(`Failed to delete homepage gallery item: ${await response.text()}`)
+      }
 
       showAlert('success', 'Gallery item deleted successfully')
       fetchGalleryItems()
@@ -265,15 +267,35 @@ export function AdminHomepageGallery() {
       if (!swapItem) return
 
       // Swap the orders
-      await supabase
-        .from('homepage_gallery')
-        .update({ display_order: item.display_order })
-        .eq('id', swapItem.id)
+      const response1 = await fetch(`/api/homepage-gallery/${swapItem.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+          ...swapItem,
+          display_order: item.display_order 
+        })
+      })
 
-      await supabase
-        .from('homepage_gallery')
-        .update({ display_order: newOrder })
-        .eq('id', id)
+      if (!response1.ok) {
+        throw new Error(`Failed to update display order: ${await response1.text()}`)
+      }
+
+      const response2 = await fetch(`/api/homepage-gallery/${id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+          ...item,
+          display_order: newOrder 
+        })
+      })
+
+      if (!response2.ok) {
+        throw new Error(`Failed to update display order: ${await response2.text()}`)
+      }
 
       fetchGalleryItems()
     } catch (error) {

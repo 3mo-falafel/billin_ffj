@@ -3,7 +3,7 @@
 import type React from "react"
 
 import { useState } from "react"
-import { createClient } from "@/lib/supabase/client"
+// API calls will use fetch instead of Supabase
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -53,7 +53,6 @@ export function GalleryForm({ galleryItem }: GalleryFormProps) {
   const [mediaFile, setMediaFile] = useState<File | null>(null)
   const [previewUrl, setPreviewUrl] = useState<string | null>(galleryItem?.media_url || null)
   const router = useRouter()
-  const supabase = createClient()
 
   const handleInputChange = (field: keyof GalleryItem, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }))
@@ -71,21 +70,16 @@ export function GalleryForm({ galleryItem }: GalleryFormProps) {
   }
 
   const handleFileUpload = async (file: File): Promise<string> => {
-    const fileExt = file.name.split(".").pop()
-    const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`
-    const filePath = `gallery/${fileName}`
-
-    const { error: uploadError } = await supabase.storage.from("media").upload(filePath, file)
-
-    if (uploadError) {
-      throw uploadError
-    }
-
-    const {
-      data: { publicUrl },
-    } = supabase.storage.from("media").getPublicUrl(filePath)
-
-    return publicUrl
+    // For now, create a blob URL for preview
+    // In production, implement proper file upload to your chosen storage solution
+    const url = URL.createObjectURL(file)
+    
+    // NOTE: This creates a temporary URL for preview only
+    // You'll need to implement actual file upload to a storage service
+    // like AWS S3, Cloudinary, or your own server
+    
+    console.warn('File upload not implemented - using blob URL for preview only')
+    return url
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -109,14 +103,30 @@ export function GalleryForm({ galleryItem }: GalleryFormProps) {
 
       if (galleryItem?.id) {
         // Update existing gallery item
-        const { error: updateError } = await supabase.from("gallery").update(finalFormData).eq("id", galleryItem.id)
+        const response = await fetch(`/api/gallery/${galleryItem.id}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(finalFormData)
+        })
 
-        if (updateError) throw updateError
+        if (!response.ok) {
+          throw new Error(`Failed to update gallery item: ${await response.text()}`)
+        }
       } else {
         // Create new gallery item
-        const { error: insertError } = await supabase.from("gallery").insert([finalFormData])
+        const response = await fetch('/api/gallery', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(finalFormData)
+        })
 
-        if (insertError) throw insertError
+        if (!response.ok) {
+          throw new Error(`Failed to create gallery item: ${await response.text()}`)
+        }
       }
 
       router.push("/admin/gallery")

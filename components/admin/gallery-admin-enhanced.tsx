@@ -132,22 +132,16 @@ export default function GalleryAdminEnhanced() {
 
   const loadGalleryItems = async () => {
     try {
-      const { createClient } = await import('@/lib/supabase/client')
-      const supabase = createClient()
-      
-      const { data, error } = await supabase
-        .from('gallery')
-        .select('*')
-        .order('created_at', { ascending: false })
-      
-      if (error) {
-        console.error('Error loading gallery items:', error)
-        setGalleryItems([])
-        return
+      const response = await fetch('/api/gallery')
+      if (!response.ok) {
+        throw new Error(`Failed to load gallery items: ${await response.text()}`)
       }
       
+      const result = await response.json()
+      const data = result.data || []
+      
       // Transform the data to match our interface
-      const transformedItems: GalleryItem[] = (data || []).map(item => ({
+      const transformedItems: GalleryItem[] = data.map((item: any) => ({
         id: item.id,
         title_en: item.title_en || 'Untitled',
         title_ar: item.title_ar || 'بدون عنوان',
@@ -189,9 +183,6 @@ export default function GalleryAdminEnhanced() {
     e.preventDefault()
     
     try {
-      const { createClient } = await import('@/lib/supabase/client')
-      const supabase = createClient()
-      
       // Prepare data for database
       const itemData = {
         title_en: formData.title_en,
@@ -204,18 +195,29 @@ export default function GalleryAdminEnhanced() {
       }
 
       if (editingItem) {
-        const { error } = await supabase
-          .from('gallery')
-          .update(itemData)
-          .eq('id', editingItem.id)
+        const response = await fetch(`/api/gallery/${editingItem.id}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(itemData)
+        })
         
-        if (error) throw error
+        if (!response.ok) {
+          throw new Error(`Failed to update gallery item: ${await response.text()}`)
+        }
       } else {
-        const { error } = await supabase
-          .from('gallery')
-          .insert([itemData])
+        const response = await fetch('/api/gallery', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(itemData)
+        })
         
-        if (error) throw error
+        if (!response.ok) {
+          throw new Error(`Failed to create gallery item: ${await response.text()}`)
+        }
       }
 
       // Reload gallery items from database
@@ -274,15 +276,13 @@ export default function GalleryAdminEnhanced() {
   const handleDelete = async (id: string) => {
     if (confirm('Are you sure you want to delete this gallery item?')) {
       try {
-        const { createClient } = await import('@/lib/supabase/client')
-        const supabase = createClient()
+        const response = await fetch(`/api/gallery/${id}`, {
+          method: 'DELETE'
+        })
         
-        const { error } = await supabase
-          .from('gallery')
-          .delete()
-          .eq('id', id)
-        
-        if (error) throw error
+        if (!response.ok) {
+          throw new Error(`Failed to delete gallery item: ${await response.text()}`)
+        }
         
         // Reload gallery items from database
         await loadGalleryItems()

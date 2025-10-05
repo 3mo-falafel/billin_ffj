@@ -3,7 +3,7 @@
 import type React from "react"
 
 import { useState } from "react"
-import { createClient } from "@/lib/api/client"
+// API calls will use fetch instead of Supabase
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -42,28 +42,22 @@ export function ActivityForm({ activity }: ActivityFormProps) {
   const [imageFile, setImageFile] = useState<File | null>(null)
   const [videoFile, setVideoFile] = useState<File | null>(null)
   const router = useRouter()
-  const supabase = createClient()
 
   const handleInputChange = (field: keyof Activity, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }))
   }
 
   const handleFileUpload = async (file: File, type: "image" | "video"): Promise<string> => {
-    const fileExt = file.name.split(".").pop()
-    const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`
-    const filePath = `${type}s/${fileName}`
-
-    const { error: uploadError } = await supabase.storage.from("media").upload(filePath, file)
-
-    if (uploadError) {
-      throw uploadError
-    }
-
-    const {
-      data: { publicUrl },
-    } = supabase.storage.from("media").getPublicUrl(filePath)
-
-    return publicUrl
+    // For now, create a blob URL for preview
+    // In production, implement proper file upload to your chosen storage solution
+    const url = URL.createObjectURL(file)
+    
+    // NOTE: This creates a temporary URL for preview only
+    // You'll need to implement actual file upload to a storage service
+    // like AWS S3, Cloudinary, or your own server
+    
+    console.warn(`${type} upload not implemented - using blob URL for preview only`)
+    return url
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -92,23 +86,39 @@ export function ActivityForm({ activity }: ActivityFormProps) {
       if (activity?.id) {
         // Update existing activity
         console.log('🔍 ACTIVITY FORM DEBUG - Updating activity:', activity.id)
-        const { error: updateError } = await supabase.from("activities").update(finalFormData).eq("id", activity.id)
+        const response = await fetch(`/api/activities/${activity.id}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(finalFormData)
+        })
 
-        if (updateError) {
-          console.error('🔍 ACTIVITY FORM DEBUG - Update error:', updateError)
-          throw updateError
+        if (!response.ok) {
+          const errorText = await response.text()
+          console.error('🔍 ACTIVITY FORM DEBUG - Update error:', errorText)
+          throw new Error(`Failed to update activity: ${errorText}`)
         }
         console.log('🔍 ACTIVITY FORM DEBUG - Update successful')
       } else {
         // Create new activity
         console.log('🔍 ACTIVITY FORM DEBUG - Creating new activity')
-        const { error: insertError, data: insertData } = await supabase.from("activities").insert([finalFormData]).select()
+        const response = await fetch('/api/activities', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(finalFormData)
+        })
 
-        if (insertError) {
-          console.error('🔍 ACTIVITY FORM DEBUG - Insert error:', insertError)
-          throw insertError
+        if (!response.ok) {
+          const errorText = await response.text()
+          console.error('🔍 ACTIVITY FORM DEBUG - Insert error:', errorText)
+          throw new Error(`Failed to create activity: ${errorText}`)
         }
-        console.log('🔍 ACTIVITY FORM DEBUG - Insert successful:', insertData)
+        
+        const result = await response.json()
+        console.log('🔍 ACTIVITY FORM DEBUG - Insert successful:', result)
       }
 
       console.log('🔍 ACTIVITY FORM DEBUG - Redirecting to admin activities')
