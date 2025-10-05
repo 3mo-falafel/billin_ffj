@@ -7,11 +7,11 @@ import { X } from "lucide-react"
 
 interface NewsItem {
   id: string
-  text_en: string
-  text_ar: string
+  message_en: string
+  message_ar: string
   is_active: boolean
   created_at: string
-  order_index?: number
+  display_order?: number
 }
 
 export function NewsTicker() {
@@ -50,7 +50,7 @@ export function NewsTicker() {
           .from("news_ticker")
           .select("*")
           .eq("is_active", true)
-          .order("order_index", { ascending: true })
+          .order("display_order", { ascending: true })
         
         if (error) {
           // Only log actual errors, not missing table errors
@@ -67,11 +67,11 @@ export function NewsTicker() {
           // Convert default news to expected format
           const defaultItems = defaultNews.en.map((text, index) => ({
             id: `default-${index}`,
-            text_en: text,
-            text_ar: defaultNews.ar[index] || text,
+            message_en: text,
+            message_ar: defaultNews.ar[index] || text,
             is_active: true,
             created_at: new Date().toISOString(),
-            order_index: index
+            display_order: index
           }))
           setNews(defaultItems)
         }
@@ -79,11 +79,11 @@ export function NewsTicker() {
         // Silently fall back to default news - don't spam console
         const defaultItems = defaultNews.en.map((text, index) => ({
           id: `default-${index}`,
-          text_en: text,
-          text_ar: defaultNews.ar[index] || text,
+          message_en: text,
+          message_ar: defaultNews.ar[index] || text,
           is_active: true,
           created_at: new Date().toISOString(),
-          order_index: index
+          display_order: index
         }))
         setNews(defaultItems)
       }
@@ -95,7 +95,7 @@ export function NewsTicker() {
   // Don't render until client-side to avoid hydration mismatch
   if (!isClient || !isVisible || news.length === 0) return null
 
-  const newsTexts = news.map(item => language === 'en' ? item.text_en : item.text_ar)
+  const newsTexts = news.map(item => language === 'en' ? item.message_en : item.message_ar)
   const combinedNews = newsTexts.join(' • ')
 
   return (
