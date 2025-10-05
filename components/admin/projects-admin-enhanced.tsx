@@ -84,57 +84,30 @@ export default function ProjectsAdminEnhanced() {
 
   const loadProjects = async () => {
     try {
-      const response = await fetch('/api/projects')
+      console.log('🔍 PROJECTS ADMIN DEBUG - Loading projects...')
+      
+      const response = await fetch('/api/projects?active=true')
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+      
       const result = await response.json()
+      console.log('🔍 PROJECTS ADMIN DEBUG - API response:', result)
       
-      if (result.success) {
-        setProjects(result.data || [])
-        return
+      if (result.success && result.data) {
+        console.log('🔍 PROJECTS ADMIN DEBUG - Projects loaded:', result.data.length)
+        setProjects(result.data)
+      } else if (result.error) {
+        console.error('🔍 PROJECTS ADMIN DEBUG - API error:', result.error)
+        setProjects([])
+      } else {
+        console.error('🔍 PROJECTS ADMIN DEBUG - Unexpected response format')
+        setProjects([])
       }
       
-      const error = result.error
-      
-      if (error) {
-        console.error('Error loading projects:', error)
-        console.error('Error details:', JSON.stringify(error, null, 2))
-        
-        // Fallback to sample data if database fails
-        setProjects([
-          {
-            id: 'sample-1',
-            name: 'Community Greenhouse Project',
-            description: 'Building a modern greenhouse to grow fresh vegetables for the community year-round. This project will provide sustainable food source and create job opportunities.',
-            location: 'Bil\'in Village Center',
-            goal_amount: 25000,
-            raised_amount: 8500,
-            start_date: '2024-01-15',
-            end_date: '2024-06-30',
-            status: 'active',
-            images: ['/placeholder.jpg'],
-            is_featured: true,
-            is_active: true,
-            created_at: new Date().toISOString()
-          },
-          {
-            id: 'sample-2',
-            name: 'Solar Panel Installation',
-            description: 'Installing solar panels on community buildings to reduce electricity costs and promote renewable energy.',
-            location: 'Community Center',
-            goal_amount: 15000,
-            raised_amount: 12000,
-            start_date: '2024-02-01',
-            status: 'active',
-            images: ['/placeholder.jpg'],
-            is_featured: false,
-            is_active: true,
-            created_at: new Date().toISOString()
-          }
-        ])
-        return
-      }
-      
-    } catch (error) {
-      console.error('Error loading projects:', error)
+    } catch (error: any) {
+      console.error('🔍 PROJECTS ADMIN DEBUG - Error loading projects:', error)
       setProjects([])
     }
   }
@@ -179,7 +152,7 @@ export default function ProjectsAdminEnhanced() {
 
   const handleSubmit = async () => {
     try {
-      // Using API fetch calls instead of Supabase
+      console.log('🔍 PROJECTS ADMIN DEBUG - Submitting project...')
       
       const projectData = {
         name: formData.name,
@@ -195,53 +168,85 @@ export default function ProjectsAdminEnhanced() {
         is_active: formData.is_active
       }
 
+      console.log('🔍 PROJECTS ADMIN DEBUG - Project data:', projectData)
+
+      let response, result
+
       if (editingProject) {
-        const response = await fetch(`/api/projects/${editingProject.id}`, {
+        console.log('🔍 PROJECTS ADMIN DEBUG - Updating project:', editingProject.id)
+        response = await fetch(`/api/projects/${editingProject.id}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(projectData)
         })
-        const result = await response.json()
-        if (!result.success) throw new Error(result.error)
       } else {
-        const response = await fetch('/api/projects', {
+        console.log('🔍 PROJECTS ADMIN DEBUG - Creating new project')
+        response = await fetch('/api/projects', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(projectData)
         })
-        const result = await response.json()
-        if (!result.success) throw new Error(result.error)
       }
 
+      if (!response.ok) {
+        const errorText = await response.text()
+        throw new Error(`HTTP ${response.status}: ${errorText}`)
+      }
+
+      result = await response.json()
+      console.log('🔍 PROJECTS ADMIN DEBUG - API response:', result)
+
+      if (!result.success) {
+        throw new Error(result.error || 'Unknown API error')
+      }
+
+      console.log('🔍 PROJECTS ADMIN DEBUG - Project saved successfully')
+      
+      // Reload projects from database
       await loadProjects()
+      
       setShowAddDialog(false)
       resetForm()
       setEditingProject(null)
       
       alert(editingProject ? 'Project updated successfully!' : 'Project created successfully!')
       
-    } catch (error) {
-      console.error('Error saving project:', error)
-      console.error('Error details:', JSON.stringify(error, null, 2))
-      alert(`Failed to save project. Error: ${error instanceof Error ? error.message : 'Unknown error'}`)
+    } catch (error: any) {
+      console.error('🔍 PROJECTS ADMIN DEBUG - Error saving project:', error)
+      alert(`Failed to save project. Error: ${error.message || 'Unknown error'}`)
     }
   }
 
   const handleDelete = async (id: string) => {
     if (confirm('Are you sure you want to delete this project?')) {
       try {
+        console.log('🔍 PROJECTS ADMIN DEBUG - Deleting project:', id)
+        
         const response = await fetch(`/api/projects/${id}`, {
           method: 'DELETE'
         })
-        const result = await response.json()
-        if (!result.success) throw new Error(result.error)
         
+        if (!response.ok) {
+          const errorText = await response.text()
+          throw new Error(`HTTP ${response.status}: ${errorText}`)
+        }
+        
+        const result = await response.json()
+        console.log('🔍 PROJECTS ADMIN DEBUG - Delete response:', result)
+        
+        if (!result.success) {
+          throw new Error(result.error || 'Unknown API error')
+        }
+        
+        console.log('🔍 PROJECTS ADMIN DEBUG - Project deleted successfully')
+        
+        // Reload projects from database
         await loadProjects()
         alert('Project deleted successfully!')
         
-      } catch (error) {
-        console.error('Error deleting project:', error)
-        alert('Failed to delete project. Please try again.')
+      } catch (error: any) {
+        console.error('🔍 PROJECTS ADMIN DEBUG - Error deleting project:', error)
+        alert(`Failed to delete project. Error: ${error.message || 'Unknown error'}`)
       }
     }
   }

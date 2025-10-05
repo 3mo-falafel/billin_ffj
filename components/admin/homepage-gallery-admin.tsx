@@ -114,16 +114,23 @@ export function AdminHomepageGallery() {
   }
 
   const handleFileUpload = async (file: File): Promise<string> => {
-    // For now, create a blob URL for preview
-    // In production, implement proper file upload to your chosen storage solution
-    const url = URL.createObjectURL(file)
+    console.log('🔍 HOMEPAGE GALLERY DEBUG - Starting file upload process...')
     
-    // NOTE: This creates a temporary URL for preview only
-    // You'll need to implement actual file upload to a storage service
-    // like AWS S3, Cloudinary, or your own server
-    
-    console.warn('File upload not implemented - using blob URL for preview only')
-    return url
+    // For now, create a data URL that can be stored in the database
+    // This is a temporary solution - in production you would upload to cloud storage
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader()
+      reader.onload = (e) => {
+        const dataUrl = e.target?.result as string
+        console.log('🔍 HOMEPAGE GALLERY DEBUG - File converted to data URL successfully')
+        resolve(dataUrl)
+      }
+      reader.onerror = (e) => {
+        console.error('🔍 HOMEPAGE GALLERY DEBUG - FileReader error:', e)
+        reject(new Error('Failed to read file'))
+      }
+      reader.readAsDataURL(file)
+    })
   }
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -156,6 +163,8 @@ export function AdminHomepageGallery() {
 
   const handleSave = async () => {
     try {
+      console.log('🔍 HOMEPAGE GALLERY DEBUG - Starting save process...')
+      
       if (!formData.title_en || !formData.title_ar) {
         showAlert('error', 'Please fill in all required fields')
         return
@@ -165,12 +174,14 @@ export function AdminHomepageGallery() {
 
       // Handle file upload if a file is selected
       if (imageFile) {
+        console.log('🔍 HOMEPAGE GALLERY DEBUG - Processing uploaded file...')
         setUploading(true)
         try {
           finalImageUrl = await handleFileUpload(imageFile)
-        } catch (error) {
-          console.error('Upload failed:', error)
-          showAlert('error', 'Failed to upload image')
+          console.log('🔍 HOMEPAGE GALLERY DEBUG - File upload successful')
+        } catch (error: any) {
+          console.error('🔍 HOMEPAGE GALLERY DEBUG - Upload failed:', error)
+          showAlert('error', `Failed to upload image: ${error.message}`)
           setUploading(false)
           return
         }
@@ -187,9 +198,13 @@ export function AdminHomepageGallery() {
         image_url: finalImageUrl
       }
 
+      console.log('🔍 HOMEPAGE GALLERY DEBUG - Final form data:', finalFormData)
+
+      let response
       if (editingId) {
+        console.log('🔍 HOMEPAGE GALLERY DEBUG - Updating existing item:', editingId)
         // Update existing item
-        const response = await fetch(`/api/homepage-gallery/${editingId}`, {
+        response = await fetch(`/api/homepage-gallery/${editingId}`, {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
@@ -203,32 +218,34 @@ export function AdminHomepageGallery() {
             is_active: finalFormData.is_active
           })
         })
-
-        if (!response.ok) {
-          throw new Error(`Failed to update homepage gallery item: ${await response.text()}`)
-        }
-        showAlert('success', 'Gallery item updated successfully')
       } else {
+        console.log('🔍 HOMEPAGE GALLERY DEBUG - Creating new item')
         // Add new item
-        const response = await fetch('/api/homepage-gallery', {
+        response = await fetch('/api/homepage-gallery', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify(finalFormData)
         })
-
-        if (!response.ok) {
-          throw new Error(`Failed to create homepage gallery item: ${await response.text()}`)
-        }
-        showAlert('success', 'Gallery item added successfully')
       }
 
+      if (!response.ok) {
+        const errorText = await response.text()
+        console.error('🔍 HOMEPAGE GALLERY DEBUG - API Error:', errorText)
+        throw new Error(`API Error: ${errorText}`)
+      }
+
+      const result = await response.json()
+      console.log('🔍 HOMEPAGE GALLERY DEBUG - Save successful:', result)
+
+      showAlert('success', editingId ? 'Gallery item updated successfully' : 'Gallery item added successfully')
+
       resetForm()
-      fetchGalleryItems()
-    } catch (error) {
-      console.error('Error saving gallery item:', error)
-      showAlert('error', 'Failed to save gallery item')
+      await fetchGalleryItems()
+    } catch (error: any) {
+      console.error('🔍 HOMEPAGE GALLERY DEBUG - Error saving gallery item:', error)
+      showAlert('error', `Failed to save gallery item: ${error.message}`)
     }
   }
 

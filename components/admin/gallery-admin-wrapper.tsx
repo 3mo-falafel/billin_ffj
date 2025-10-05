@@ -560,10 +560,49 @@ export default function GalleryAdminWrapper() {
                 <Button variant="outline" onClick={() => setShowAddDialog(false)}>
                   Cancel
                 </Button>
-                <Button onClick={() => {
-                  // Handle photo save here
-                  console.log('Save photo album:', photoFormData)
-                  setShowAddDialog(false)
+                <Button onClick={async () => {
+                  try {
+                    console.log('🔍 GALLERY ADMIN DEBUG - Saving photo album:', photoFormData)
+                    
+                    if (!photoFormData.title || !photoFormData.category || photoFormData.images.length === 0) {
+                      alert('Please fill in all required fields and add at least one image')
+                      return
+                    }
+                    
+                    const { createClient } = await import('@/lib/api/client')
+                    const api = createClient()
+                    
+                    // Create gallery entries for each image
+                    for (let i = 0; i < photoFormData.images.length; i++) {
+                      const imageData = {
+                        title_en: photoFormData.title,
+                        title_ar: photoFormData.title, // Could be translated
+                        description_en: photoFormData.location,
+                        description_ar: photoFormData.location, // Could be translated
+                        media_url: photoFormData.images[i],
+                        media_type: 'image',
+                        category: photoFormData.category,
+                        is_active: true
+                      }
+                      
+                      const { error } = await api.gallery.create(imageData)
+                      if (error) {
+                        throw new Error(`Failed to save image ${i + 1}: ${error.message}`)
+                      }
+                    }
+                    
+                    console.log('🔍 GALLERY ADMIN DEBUG - Photo album saved successfully')
+                    
+                    // Reload data and close dialog
+                    await loadData()
+                    setShowAddDialog(false)
+                    setPhotoFormData({ title: '', location: '', category: '', images: [] })
+                    alert('Photo album created successfully!')
+                    
+                  } catch (error: any) {
+                    console.error('🔍 GALLERY ADMIN DEBUG - Error saving photo album:', error)
+                    alert(`Failed to save photo album: ${error.message}`)
+                  }
                 }}>
                   Save Album
                 </Button>
@@ -632,10 +671,50 @@ export default function GalleryAdminWrapper() {
                 <Button variant="outline" onClick={() => setShowAddDialog(false)}>
                   Cancel
                 </Button>
-                <Button onClick={() => {
-                  // Handle video save here
-                  console.log('Save video:', videoFormData)
-                  setShowAddDialog(false)
+                <Button onClick={async () => {
+                  try {
+                    console.log('🔍 GALLERY ADMIN DEBUG - Saving video:', videoFormData)
+                    
+                    if (!videoFormData.title || !videoFormData.video_url || !videoFormData.category) {
+                      alert('Please fill in all required fields')
+                      return
+                    }
+                    
+                    const { createClient } = await import('@/lib/api/client')
+                    const api = createClient()
+                    
+                    // Store cover image in description for now (could be improved)
+                    const description = videoFormData.description + 
+                      (videoFormData.cover_image ? ` | COVER_IMAGE:${videoFormData.cover_image}` : '')
+                    
+                    const videoData = {
+                      title_en: videoFormData.title,
+                      title_ar: videoFormData.title, // Could be translated
+                      description_en: description,
+                      description_ar: description, // Could be translated
+                      media_url: videoFormData.video_url,
+                      media_type: 'video',
+                      category: videoFormData.category,
+                      is_active: true
+                    }
+                    
+                    const { error } = await api.gallery.create(videoData)
+                    if (error) {
+                      throw new Error(error.message)
+                    }
+                    
+                    console.log('🔍 GALLERY ADMIN DEBUG - Video saved successfully')
+                    
+                    // Reload data and close dialog
+                    await loadData()
+                    setShowAddDialog(false)
+                    setVideoFormData({ title: '', description: '', video_url: '', cover_image: '', category: '' })
+                    alert('Video created successfully!')
+                    
+                  } catch (error: any) {
+                    console.error('🔍 GALLERY ADMIN DEBUG - Error saving video:', error)
+                    alert(`Failed to save video: ${error.message}`)
+                  }
                 }}>
                   Save Video
                 </Button>

@@ -9,7 +9,6 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import Link from "next/link"
-import { createClient } from "@/lib/supabase/client"
 import { Target, DollarSign, MapPin, Calendar, Heart, Users, ImageIcon, ChevronLeft, ChevronRight, X } from "lucide-react"
 
 interface Project {
@@ -41,70 +40,29 @@ export default function ProjectsPage() {
 
   const fetchProjects = async () => {
     try {
-      const supabase = createClient()
-      const { data, error } = await supabase
-        .from('projects')
-        .select('*')
-        .eq('is_active', true)
-        .order('is_featured', { ascending: false })
-        .order('created_at', { ascending: false })
-
-      if (error) {
-        console.error('Error fetching projects:', error)
-        // Fallback to sample data
-        console.log('Using fallback sample data for projects')
-        setProjects([
-          {
-            id: 1,
-            name: 'Community Greenhouse Project',
-            description: 'Building a modern greenhouse to grow fresh vegetables for the community year-round. This project will provide sustainable food source and create job opportunities for local families.',
-            location: 'Bil\'in Village Center',
-            goal_amount: 25000,
-            raised_amount: 8500,
-            start_date: '2024-01-15',
-            end_date: '2024-06-30',
-            status: 'active',
-            images: ['/B1.jpg', '/B2.jpg', '/placeholder.jpg'],
-            is_featured: true,
-            is_active: true,
-            created_at: new Date().toISOString()
-          },
-          {
-            id: 2,
-            name: 'Solar Panel Installation',
-            description: 'Installing solar panels on community buildings to reduce electricity costs and promote renewable energy in our village.',
-            location: 'Community Center',
-            goal_amount: 15000,
-            raised_amount: 12000,
-            start_date: '2024-02-01',
-            status: 'active',
-            images: ['/B333333.jpg', '/placeholder.jpg'],
-            is_featured: false,
-            is_active: true,
-            created_at: new Date().toISOString()
-          },
-          {
-            id: 3,
-            name: 'Children\'s Playground',
-            description: 'Creating a safe and modern playground for children in the village with swings, slides, and safety equipment.',
-            location: 'Village Park Area',
-            goal_amount: 18000,
-            raised_amount: 3200,
-            start_date: '2024-03-01',
-            end_date: '2024-07-01',
-            status: 'planning',
-            images: ['/olive-harvest.png', '/peaceful-demonstration.png'],
-            is_featured: true,
-            is_active: true,
-            created_at: new Date().toISOString()
-          }
-        ])
-      } else {
-        console.log('Projects loaded from database:', data)
-        setProjects(data || [])
+      console.log('🔍 PROJECTS PUBLIC DEBUG - Loading projects from API...')
+      
+      const response = await fetch('/api/projects?active=true&featured=false')
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
       }
-    } catch (error) {
-      console.error('Error:', error)
+      
+      const result = await response.json()
+      console.log('🔍 PROJECTS PUBLIC DEBUG - API response:', result)
+      
+      if (result.success && result.data) {
+        console.log('🔍 PROJECTS PUBLIC DEBUG - Projects loaded:', result.data.length)
+        setProjects(result.data)
+      } else if (result.error) {
+        console.error('🔍 PROJECTS PUBLIC DEBUG - API error:', result.error)
+        setProjects([])
+      } else {
+        console.error('🔍 PROJECTS PUBLIC DEBUG - Unexpected response format')
+        setProjects([])
+      }
+    } catch (error: any) {
+      console.error('🔍 PROJECTS PUBLIC DEBUG - Error loading projects:', error)
       setProjects([])
     } finally {
       setLoading(false)

@@ -135,90 +135,107 @@ export default function ScholarshipsAdminEnhanced() {
 
   const loadData = async () => {
     try {
-      // Load from database using the existing scholarships table
-      const response = await fetch('/api/scholarships')
+      console.log('🔍 SCHOLARSHIPS ADMIN DEBUG - Loading scholarships...')
+      
+      const response = await fetch('/api/scholarships?active=true')
       
       if (!response.ok) {
-        throw new Error(`Failed to load scholarships: ${await response.text()}`)
+        throw new Error(`HTTP error! status: ${response.status}`)
       }
       
       const result = await response.json()
-      const data = result.data || []
+      console.log('🔍 SCHOLARSHIPS ADMIN DEBUG - API response:', result)
       
-      // Ensure data is an array
-      const scholarshipData = Array.isArray(data) ? data : []
-      console.log('Loaded scholarship data:', scholarshipData)
+      // Our API returns { data: [...] } format
+      if (result.data) {
+        const scholarshipData = Array.isArray(result.data) ? result.data : []
+        console.log('🔍 SCHOLARSHIPS ADMIN DEBUG - Loaded scholarship data:', scholarshipData.length, 'items')
+        
+        // Transform data based on category
+        const studentsNeedingHelpData: StudentNeedingHelp[] = []
+        const availableScholarshipsData: AvailableScholarship[] = []
+        const helpedStudentsData: HelpedStudent[] = []
+        
+        scholarshipData.forEach((item: any) => {
+          console.log('🔍 SCHOLARSHIPS ADMIN DEBUG - Processing item:', item.category, item.title_en)
+          
+          if (item.category === 'sponsor_opportunity') {
+            // This is a student needing help
+            studentsNeedingHelpData.push({
+              id: item.id.toString(),
+              name: item.student_name || 'Student',
+              age: 20, // Default age since not in current schema
+              university_name: item.university_name || 'Unknown University',
+              amount_needed: item.scholarship_amount || 0,
+              field_of_study: item.title_en || 'Unknown Field',
+              year_of_study: '2nd Year', // Default since not in current schema
+              why_need_scholarship: item.description_en || '',
+              contact_email: item.contact_info || '',
+              contact_phone: '',
+              is_active: item.is_active !== false,
+              donations_received: 0, // Default since not tracked yet
+              created_at: item.created_at
+            })
+          } else if (item.category === 'available') {
+            // This is an available scholarship
+            availableScholarshipsData.push({
+              id: item.id.toString(),
+              title: item.title_en,
+              description: item.description_en,
+              amount: item.scholarship_amount || 0,
+              requirements: item.requirements_en || '',
+              deadline: item.deadline || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+              provider_name: 'Bil\'in Education Committee',
+              provider_email: item.contact_info || 'ffj.mediacenter@gmail.com',
+              provider_phone: '',
+              max_applicants: 20,
+              current_applicants: 0,
+              is_active: item.is_active !== false,
+              created_at: item.created_at
+            })
+          } else if (item.category === 'awarded') {
+            // This is a student we helped
+            helpedStudentsData.push({
+              id: item.id.toString(),
+              name: item.student_name || 'Student',
+              university_name: item.university_name || 'Unknown University',
+              field_of_study: item.title_en || 'Unknown Field',
+              amount_received: item.scholarship_amount || 0,
+              year_received: new Date(item.created_at).getFullYear().toString(),
+              success_story: item.description_en || '',
+              current_status: 'Graduate',
+              created_at: item.created_at
+            })
+          }
+        })
+        
+        console.log('🔍 SCHOLARSHIPS ADMIN DEBUG - Categories processed:', {
+          studentsNeedingHelp: studentsNeedingHelpData.length,
+          availableScholarships: availableScholarshipsData.length,
+          helpedStudents: helpedStudentsData.length
+        })
+        
+        setStudentsNeedingHelp(studentsNeedingHelpData)
+        setAvailableScholarships(availableScholarshipsData)
+        setHelpedStudents(helpedStudentsData)
+        
+      } else if (result.error) {
+        console.error('🔍 SCHOLARSHIPS ADMIN DEBUG - API error:', result.error)
+        setStudentsNeedingHelp([])
+        setAvailableScholarships([])
+        setHelpedStudents([])
+      } else {
+        console.error('🔍 SCHOLARSHIPS ADMIN DEBUG - Unexpected response format')
+        setStudentsNeedingHelp([])
+        setAvailableScholarships([])
+        setHelpedStudents([])
+      }
       
-      // Transform data based on category
-      const studentsNeedingHelpData: StudentNeedingHelp[] = []
-      const availableScholarshipsData: AvailableScholarship[] = []
-      const helpedStudentsData: HelpedStudent[] = []
-      
-      scholarshipData.forEach((item: any) => {
-        if (item.category === 'sponsor_opportunity') {
-          // This is a student needing help
-          studentsNeedingHelpData.push({
-            id: item.id.toString(),
-            name: item.student_name || 'Student',
-            age: 20, // Default age since not in current schema
-            university_name: item.university_name || 'Unknown University',
-            amount_needed: item.scholarship_amount || 0,
-            field_of_study: item.title_en || 'Unknown Field',
-            year_of_study: '2nd Year', // Default since not in current schema
-            why_need_scholarship: item.description_en || '',
-            contact_email: item.contact_info || '',
-            contact_phone: '',
-            is_active: item.is_active !== false,
-            donations_received: 0, // Default since not tracked yet
-            created_at: item.created_at
-          })
-        } else if (item.category === 'available') {
-          // This is an available scholarship
-          availableScholarshipsData.push({
-            id: item.id.toString(),
-            title: item.title_en,
-            description: item.description_en,
-            amount: item.scholarship_amount || 0,
-            requirements: item.requirements_en || '',
-            deadline: item.deadline || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-            provider_name: 'Bil\'in Education Committee',
-            provider_email: item.contact_info || 'ffj.mediacenter@gmail.com',
-            provider_phone: '',
-            max_applicants: 20,
-            current_applicants: 0,
-            is_active: item.is_active !== false,
-            created_at: item.created_at
-          })
-        } else if (item.category === 'awarded') {
-          // This is a student we helped
-          helpedStudentsData.push({
-            id: item.id.toString(),
-            name: item.student_name || 'Student',
-            university_name: item.university_name || 'Unknown University',
-            field_of_study: item.title_en || 'Unknown Field',
-            amount_received: item.scholarship_amount || 0,
-            year_received: new Date(item.created_at).getFullYear().toString(),
-            success_story: item.description_en || '',
-            current_status: 'Graduate',
-            created_at: item.created_at
-          })
-        }
-      })
-      
-      setStudentsNeedingHelp(studentsNeedingHelpData)
-      setAvailableScholarships(availableScholarshipsData)
-      setHelpedStudents(helpedStudentsData)
-      
-    } catch (error) {
-      console.error('Error loading data:', error)
-      console.error('Error details:', JSON.stringify(error, null, 2))
-      
-      // Set empty arrays on error
+    } catch (error: any) {
+      console.error('🔍 SCHOLARSHIPS ADMIN DEBUG - Error loading data:', error)
       setStudentsNeedingHelp([])
       setAvailableScholarships([])
       setHelpedStudents([])
-      
-
     }
   }
 

@@ -34,17 +34,45 @@ export function NewsList() {
   async function loadNews() {
     try {
       setLoading(true)
-      const response = await fetch('/api/news')
-      const result = await response.json()
+      console.log('🔍 NEWS LIST DEBUG - Loading news from API...')
       
-      if (result.success) {
-        setNews(result.data || [])
-      } else {
-        setError(result.error || 'Failed to load news')
+      const response = await fetch('/api/news?active=true')
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
       }
-    } catch (error) {
-      console.error('Error loading news:', error)
-      setError('Failed to load news')
+      
+      const result = await response.json()
+      console.log('🔍 NEWS LIST DEBUG - API response:', result)
+      
+      // Our news API returns { data: [...] } format, not { success: true, data: [...] }
+      if (result.data) {
+        // Transform the database data to match expected interface
+        const transformedNews = result.data.map((article: any) => ({
+          id: article.id,
+          title_en: article.title_en,
+          title_ar: article.title_ar,
+          content_en: article.content_en,
+          content_ar: article.content_ar,
+          summary_en: article.content_en?.substring(0, 150), // Create summary from content
+          summary_ar: article.content_ar?.substring(0, 150), // Create summary from content
+          category: 'news', // Default category since DB might not have this field
+          image_url: article.image_url,
+          is_featured: article.featured || false,
+          published_at: article.date || article.created_at,
+          created_at: article.created_at
+        }))
+        
+        console.log('🔍 NEWS LIST DEBUG - Transformed news:', transformedNews)
+        setNews(transformedNews)
+      } else if (result.error) {
+        setError(result.error)
+      } else {
+        setError('Unexpected response format')
+      }
+    } catch (error: any) {
+      console.error('🔍 NEWS LIST DEBUG - Error loading news:', error)
+      setError(`Failed to load news: ${error.message}`)
     } finally {
       setLoading(false)
     }
