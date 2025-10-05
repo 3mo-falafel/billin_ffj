@@ -487,6 +487,164 @@ export default function GalleryAdminWrapper() {
         </div>
       )}
 
+      {/* Add Content Dialog */}
+      <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>
+              {editingItem ? 'Edit Content' : 'Add New Content'}
+            </DialogTitle>
+          </DialogHeader>
+          
+          <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'photos' | 'videos')}>
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="photos">Photo Album</TabsTrigger>
+              <TabsTrigger value="videos">Video</TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="photos" className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="photo-title">Album Title</Label>
+                  <Input
+                    id="photo-title"
+                    value={photoFormData.title}
+                    onChange={(e) => setPhotoFormData({ ...photoFormData, title: e.target.value })}
+                    placeholder="Enter album title..."
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="photo-location">Location</Label>
+                  <Input
+                    id="photo-location"
+                    value={photoFormData.location}
+                    onChange={(e) => setPhotoFormData({ ...photoFormData, location: e.target.value })}
+                    placeholder="Enter location..."
+                  />
+                </div>
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="photo-category">Category</Label>
+                <Select value={photoFormData.category} onValueChange={(value) => setPhotoFormData({ ...photoFormData, category: value })}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select category..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {categories.map((cat) => (
+                      <SelectItem key={cat.value} value={cat.value}>
+                        {cat.icon} {cat.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div className="space-y-2">
+                <Label>Images</Label>
+                <Input
+                  type="file"
+                  multiple
+                  accept="image/*"
+                  onChange={(e) => {
+                    const files = Array.from(e.target.files || [])
+                    // For now, just show file names (would need proper upload handling)
+                    const imageUrls = files.map(file => URL.createObjectURL(file))
+                    setPhotoFormData({ ...photoFormData, images: imageUrls })
+                  }}
+                />
+                <p className="text-sm text-muted-foreground">Select multiple images for the album</p>
+              </div>
+              
+              <div className="flex justify-end gap-2">
+                <Button variant="outline" onClick={() => setShowAddDialog(false)}>
+                  Cancel
+                </Button>
+                <Button onClick={() => {
+                  // Handle photo save here
+                  console.log('Save photo album:', photoFormData)
+                  setShowAddDialog(false)
+                }}>
+                  Save Album
+                </Button>
+              </div>
+            </TabsContent>
+            
+            <TabsContent value="videos" className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="video-title">Video Title</Label>
+                  <Input
+                    id="video-title"
+                    value={videoFormData.title}
+                    onChange={(e) => setVideoFormData({ ...videoFormData, title: e.target.value })}
+                    placeholder="Enter video title..."
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="video-category">Category</Label>
+                  <Select value={videoFormData.category} onValueChange={(value) => setVideoFormData({ ...videoFormData, category: value })}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select category..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {categories.map((cat) => (
+                        <SelectItem key={cat.value} value={cat.value}>
+                          {cat.icon} {cat.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="video-description">Description</Label>
+                <Input
+                  id="video-description"
+                  value={videoFormData.description}
+                  onChange={(e) => setVideoFormData({ ...videoFormData, description: e.target.value })}
+                  placeholder="Enter video description..."
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="video-url">Video URL</Label>
+                <Input
+                  id="video-url"
+                  value={videoFormData.video_url}
+                  onChange={(e) => setVideoFormData({ ...videoFormData, video_url: e.target.value })}
+                  placeholder="Enter video URL (YouTube, Vimeo, etc.)..."
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="cover-image">Cover Image URL</Label>
+                <Input
+                  id="cover-image"
+                  value={videoFormData.cover_image}
+                  onChange={(e) => setVideoFormData({ ...videoFormData, cover_image: e.target.value })}
+                  placeholder="Enter cover image URL..."
+                />
+              </div>
+              
+              <div className="flex justify-end gap-2">
+                <Button variant="outline" onClick={() => setShowAddDialog(false)}>
+                  Cancel
+                </Button>
+                <Button onClick={() => {
+                  // Handle video save here
+                  console.log('Save video:', videoFormData)
+                  setShowAddDialog(false)
+                }}>
+                  Save Video
+                </Button>
+              </div>
+            </TabsContent>
+          </Tabs>
+        </DialogContent>
+      </Dialog>
+
       {/* Image Preview Modal */}
       {previewImage && (
         <div 

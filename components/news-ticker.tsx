@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useLanguage } from "@/hooks/use-language"
-import { createClient } from "@/lib/supabase/client"
+// Removed Supabase import - using fetch API instead
 import { X } from "lucide-react"
 
 interface NewsItem {
@@ -45,36 +45,31 @@ export function NewsTicker() {
     
     async function loadNews() {
       try {
-        const supabase = createClient()
-        const { data, error } = await supabase
-          .from("news_ticker")
-          .select("*")
-          .eq("is_active", true)
-          .order("display_order", { ascending: true })
+        const response = await fetch('/api/news-ticker')
+        const result = await response.json()
         
-        if (error) {
-          // Only log actual errors, not missing table errors
-          if (!error.message.includes("does not exist") && !error.message.includes("relation") && !error.message.includes("schema")) {
-            console.warn("News ticker database error:", error.message)
+        if (result.success && result.data && result.data.length > 0) {
+          // Filter for active items and sort by display_order
+          const activeNews = result.data
+            .filter((item: NewsItem) => item.is_active)
+            .sort((a: NewsItem, b: NewsItem) => (a.display_order || 0) - (b.display_order || 0))
+          
+          if (activeNews.length > 0) {
+            setNews(activeNews)
+            return
           }
-          throw error
         }
         
-        // Use database news if available, otherwise use defaults
-        if (data && data.length > 0) {
-          setNews(data)
-        } else {
-          // Convert default news to expected format
-          const defaultItems = defaultNews.en.map((text, index) => ({
-            id: `default-${index}`,
-            message_en: text,
-            message_ar: defaultNews.ar[index] || text,
-            is_active: true,
-            created_at: new Date().toISOString(),
-            display_order: index
-          }))
-          setNews(defaultItems)
-        }
+        // Fallback to default news
+        const defaultItems = defaultNews.en.map((text, index) => ({
+          id: `default-${index}`,
+          message_en: text,
+          message_ar: defaultNews.ar[index] || text,
+          is_active: true,
+          created_at: new Date().toISOString(),
+          display_order: index
+        }))
+        setNews(defaultItems)
       } catch (error: any) {
         // Silently fall back to default news - don't spam console
         const defaultItems = defaultNews.en.map((text, index) => ({
