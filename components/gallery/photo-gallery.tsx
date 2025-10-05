@@ -5,7 +5,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { useLanguage } from "@/hooks/use-language"
 import { Camera, Eye, X, ChevronLeft, ChevronRight, Download } from "lucide-react"
-import { createClient } from "@/lib/supabase/client"
+// Using API endpoints instead of Supabase client
 
 interface PhotoAlbum {
   id: string
@@ -53,42 +53,56 @@ export function PhotoGallery() {
       setLoading(true)
       setError(null)
       try {
-        const supabase = createClient()
-        const { data, error } = await supabase
-          .from("gallery")
-          .select("*")
-          .eq("media_type", "image")
-          .order("created_at", { ascending: false })
-        if (error) throw error
+        console.log('🔍 GALLERY PUBLIC DEBUG - Loading gallery photos from API...')
         
-        if (isMounted && data) {
-          console.log('Raw gallery data:', data)
-          // Group photos by title to create albums
-          const albumMap = new Map<string, PhotoAlbum>()
-          
-          data.forEach(item => {
-            const key = item.title_en || 'Untitled Album'
-            if (!albumMap.has(key)) {
-              albumMap.set(key, {
-                id: item.id,
-                title: item.title_en || 'Untitled Album',
-                location: 'Bil\'in, Palestine',
-                images: [],
-                category: item.category || 'general',
-                created_at: item.created_at
-              })
-            }
-            if (item.media_url) {
-              console.log('Adding image to album:', key, item.media_url)
-              albumMap.get(key)!.images.push(item.media_url)
-            }
-          })
-          
-          const albums = Array.from(albumMap.values())
-          console.log('Created albums:', albums)
-          setPhotoAlbums(albums)
+        const response = await fetch('/api/gallery?media_type=image&active=true')
+        
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`)
+        }
+        
+        const result = await response.json()
+        console.log('🔍 GALLERY PUBLIC DEBUG - API response:', result)
+        
+        if (isMounted) {
+          if (result.data) {
+            const data = result.data
+            console.log('🔍 GALLERY PUBLIC DEBUG - Raw gallery data:', data.length, 'items')
+            
+            // Group photos by title to create albums
+            const albumMap = new Map<string, PhotoAlbum>()
+            
+            data.forEach((item: GalleryItem) => {
+              const key = item.title_en || 'Untitled Album'
+              if (!albumMap.has(key)) {
+                albumMap.set(key, {
+                  id: item.id,
+                  title: item.title_en || 'Untitled Album',
+                  location: 'Bil\'in, Palestine',
+                  images: [],
+                  category: item.category || 'general',
+                  created_at: item.created_at || ''
+                })
+              }
+              if (item.media_url) {
+                console.log('🔍 GALLERY PUBLIC DEBUG - Adding image to album:', key, 'URL length:', item.media_url.length)
+                albumMap.get(key)!.images.push(item.media_url)
+              }
+            })
+            
+            const albums = Array.from(albumMap.values())
+            console.log('🔍 GALLERY PUBLIC DEBUG - Created albums:', albums.length, 'albums')
+            setPhotoAlbums(albums)
+          } else if (result.error) {
+            console.error('🔍 GALLERY PUBLIC DEBUG - API error:', result.error)
+            setError(result.error)
+          } else {
+            console.error('🔍 GALLERY PUBLIC DEBUG - Unexpected response format')
+            setError('Unexpected response format')
+          }
         }
       } catch (e: any) {
+        console.error('🔍 GALLERY PUBLIC DEBUG - Error loading gallery:', e)
         if (isMounted) setError(e.message || "Failed to load gallery")
       } finally {
         if (isMounted) setLoading(false)

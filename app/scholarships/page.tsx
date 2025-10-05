@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import Link from "next/link"
-import { createClient } from "@/lib/supabase/client"
+// Using API endpoints instead of Supabase client
 import { GraduationCap, DollarSign, Heart, Mail, Phone, UserCheck, Users } from "lucide-react"
 
 interface Scholarship {
@@ -42,21 +42,29 @@ export default function ScholarshipsPage() {
 
   const fetchScholarships = async () => {
     try {
-      const supabase = createClient()
-      const { data, error } = await supabase
-        .from('scholarships')
-        .select('*')
-        .eq('is_active', true)
-        .order('created_at', { ascending: false })
-
-      if (error) {
-        console.error('Error fetching scholarships:', error)
+      console.log('🔍 SCHOLARSHIPS PUBLIC DEBUG - Loading scholarships from API...')
+      
+      const response = await fetch('/api/scholarships?active=true')
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+      
+      const result = await response.json()
+      console.log('🔍 SCHOLARSHIPS PUBLIC DEBUG - API response:', result)
+      
+      if (result.data) {
+        console.log('🔍 SCHOLARSHIPS PUBLIC DEBUG - Loaded scholarships:', result.data.length, 'items')
+        setScholarships(result.data || [])
+      } else if (result.error) {
+        console.error('🔍 SCHOLARSHIPS PUBLIC DEBUG - API error:', result.error)
         setScholarships([])
       } else {
-        setScholarships(data || [])
+        console.error('🔍 SCHOLARSHIPS PUBLIC DEBUG - Unexpected response format')
+        setScholarships([])
       }
-    } catch (error) {
-      console.error('Error:', error)
+    } catch (error: any) {
+      console.error('🔍 SCHOLARSHIPS PUBLIC DEBUG - Error loading scholarships:', error)
       setScholarships([])
     } finally {
       setLoading(false)

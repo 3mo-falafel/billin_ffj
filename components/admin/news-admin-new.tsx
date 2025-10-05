@@ -486,12 +486,27 @@ export function NewsAdmin() {
                           if (file) {
                             try {
                               setUploading(true)
-                              // For now, create a temporary URL for preview
-                              const imageUrl = URL.createObjectURL(file)
-                              setFormData(prev => ({ ...prev, image_url: imageUrl }))
-                              // In production, you would upload to cloud storage here
+                              console.log('🔍 NEWS ADMIN DEBUG - Starting file upload process...')
+                              
+                              // Convert file to data URL for storage in database
+                              const dataUrl = await new Promise<string>((resolve, reject) => {
+                                const reader = new FileReader()
+                                reader.onload = (e) => {
+                                  const dataUrl = e.target?.result as string
+                                  console.log('🔍 NEWS ADMIN DEBUG - File converted to data URL successfully')
+                                  resolve(dataUrl)
+                                }
+                                reader.onerror = (e) => {
+                                  console.error('🔍 NEWS ADMIN DEBUG - FileReader error:', e)
+                                  reject(new Error('Failed to read file'))
+                                }
+                                reader.readAsDataURL(file)
+                              })
+                              
+                              setFormData(prev => ({ ...prev, image_url: dataUrl }))
                             } catch (error) {
-                              console.error('Upload failed:', error)
+                              console.error('🔍 NEWS ADMIN DEBUG - Upload failed:', error)
+                              alert('Failed to process image. Please try again.')
                             } finally {
                               setUploading(false)
                             }

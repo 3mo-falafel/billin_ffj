@@ -168,6 +168,74 @@ export default function GalleryAdminWrapper() {
     return categories.find(cat => cat.value === categoryValue) || categories[0]
   }
 
+  const handleDeletePhoto = async (photoId: string) => {
+    if (confirm('Are you sure you want to delete this photo?')) {
+      try {
+        console.log('🔍 GALLERY ADMIN DEBUG - Deleting photo:', photoId)
+        
+        const response = await fetch(`/api/gallery/${photoId}`, {
+          method: 'DELETE'
+        })
+        
+        if (!response.ok) {
+          const errorText = await response.text()
+          throw new Error(`HTTP ${response.status}: ${errorText}`)
+        }
+        
+        const result = await response.json()
+        console.log('🔍 GALLERY ADMIN DEBUG - Delete response:', result)
+        
+        if (result.error) {
+          throw new Error(result.error)
+        }
+        
+        console.log('🔍 GALLERY ADMIN DEBUG - Photo deleted successfully')
+        
+        // Reload data to refresh the list
+        await loadData()
+        alert('Photo deleted successfully!')
+        
+      } catch (error: any) {
+        console.error('🔍 GALLERY ADMIN DEBUG - Error deleting photo:', error)
+        alert(`Failed to delete photo: ${error.message}`)
+      }
+    }
+  }
+
+  const handleDeleteVideo = async (videoId: string) => {
+    if (confirm('Are you sure you want to delete this video?')) {
+      try {
+        console.log('🔍 GALLERY ADMIN DEBUG - Deleting video:', videoId)
+        
+        const response = await fetch(`/api/gallery/${videoId}`, {
+          method: 'DELETE'
+        })
+        
+        if (!response.ok) {
+          const errorText = await response.text()
+          throw new Error(`HTTP ${response.status}: ${errorText}`)
+        }
+        
+        const result = await response.json()
+        console.log('🔍 GALLERY ADMIN DEBUG - Delete response:', result)
+        
+        if (result.error) {
+          throw new Error(result.error)
+        }
+        
+        console.log('🔍 GALLERY ADMIN DEBUG - Video deleted successfully')
+        
+        // Reload data to refresh the list
+        await loadData()
+        alert('Video deleted successfully!')
+        
+      } catch (error: any) {
+        console.error('🔍 GALLERY ADMIN DEBUG - Error deleting video:', error)
+        alert(`Failed to delete video: ${error.message}`)
+      }
+    }
+  }
+
   const filteredPhotos = photoAlbums.filter(album => {
     const matchesSearch = album.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          album.location.toLowerCase().includes(searchTerm.toLowerCase())
@@ -314,7 +382,7 @@ export default function GalleryAdminWrapper() {
                           <Button 
                             size="sm" 
                             variant="destructive" 
-                            onClick={() => alert('Delete functionality coming soon')}
+                            onClick={() => handleDeletePhoto(album.id)}
                           >
                             <Trash2 className="w-4 h-4" />
                           </Button>
@@ -378,7 +446,7 @@ export default function GalleryAdminWrapper() {
                             <Button 
                               size="sm" 
                               variant="destructive" 
-                              onClick={() => alert('Delete functionality coming soon')}
+                              onClick={() => handleDeletePhoto(album.id)}
                             >
                               <Trash2 className="w-4 h-4 mr-1" />
                               Delete
@@ -465,7 +533,7 @@ export default function GalleryAdminWrapper() {
                         <Button 
                           size="sm" 
                           variant="destructive" 
-                          onClick={() => alert('Delete functionality coming soon')}
+                          onClick={() => handleDeleteVideo(video.id)}
                         >
                           <Trash2 className="w-4 h-4" />
                         </Button>
@@ -546,11 +614,35 @@ export default function GalleryAdminWrapper() {
                   type="file"
                   multiple
                   accept="image/*"
-                  onChange={(e) => {
+                  onChange={async (e) => {
                     const files = Array.from(e.target.files || [])
-                    // For now, just show file names (would need proper upload handling)
-                    const imageUrls = files.map(file => URL.createObjectURL(file))
-                    setPhotoFormData({ ...photoFormData, images: imageUrls })
+                    console.log('🔍 GALLERY ADMIN DEBUG - Starting image uploads...', files.length, 'files')
+                    
+                    // Convert files to data URLs for storage in database
+                    const imagePromises = files.map(file => {
+                      return new Promise<string>((resolve, reject) => {
+                        const reader = new FileReader()
+                        reader.onload = (e) => {
+                          const dataUrl = e.target?.result as string
+                          console.log('🔍 GALLERY ADMIN DEBUG - File converted to data URL successfully')
+                          resolve(dataUrl)
+                        }
+                        reader.onerror = (e) => {
+                          console.error('🔍 GALLERY ADMIN DEBUG - FileReader error:', e)
+                          reject(new Error('Failed to read file'))
+                        }
+                        reader.readAsDataURL(file)
+                      })
+                    })
+                    
+                    try {
+                      const imageUrls = await Promise.all(imagePromises)
+                      console.log('🔍 GALLERY ADMIN DEBUG - All images converted successfully')
+                      setPhotoFormData({ ...photoFormData, images: imageUrls })
+                    } catch (error) {
+                      console.error('🔍 GALLERY ADMIN DEBUG - Error converting images:', error)
+                      alert('Failed to process images. Please try again.')
+                    }
                   }}
                 />
                 <p className="text-sm text-muted-foreground">Select multiple images for the album</p>

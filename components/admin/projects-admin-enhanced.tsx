@@ -196,8 +196,9 @@ export default function ProjectsAdminEnhanced() {
       result = await response.json()
       console.log('🔍 PROJECTS ADMIN DEBUG - API response:', result)
 
-      if (!result.success) {
-        throw new Error(result.error || 'Unknown API error')
+      // Check for error in response (different APIs have different formats)
+      if (result.error) {
+        throw new Error(result.error)
       }
 
       console.log('🔍 PROJECTS ADMIN DEBUG - Project saved successfully')
@@ -234,17 +235,16 @@ export default function ProjectsAdminEnhanced() {
         const result = await response.json()
         console.log('🔍 PROJECTS ADMIN DEBUG - Delete response:', result)
         
-        if (!result.success) {
-          throw new Error(result.error || 'Unknown API error')
-        }
-        
-        console.log('🔍 PROJECTS ADMIN DEBUG - Project deleted successfully')
-        
-        // Reload projects from database
-        await loadProjects()
-        alert('Project deleted successfully!')
-        
-      } catch (error: any) {
+      // API returns { message: ... } for delete operations
+      if (result.error) {
+        throw new Error(result.error)
+      }
+
+      console.log('🔍 PROJECTS ADMIN DEBUG - Project deleted successfully')
+      
+      // Reload projects from database
+      await loadProjects()
+      alert('Project deleted successfully!')      } catch (error: any) {
         console.error('🔍 PROJECTS ADMIN DEBUG - Error deleting project:', error)
         alert(`Failed to delete project. Error: ${error.message || 'Unknown error'}`)
       }
@@ -255,12 +255,36 @@ export default function ProjectsAdminEnhanced() {
     return projectStatuses.find(s => s.value === status) || projectStatuses[0]
   }
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || [])
     
-    // For now, create blob URLs for preview (in production, upload to cloud storage)
-    const imageUrls = files.map(file => URL.createObjectURL(file))
-    setFormData(prev => ({ ...prev, images: [...prev.images, ...imageUrls] }))
+    console.log('🔍 PROJECTS ADMIN DEBUG - Starting image uploads...', files.length, 'files')
+    
+    // Convert files to data URLs for storage in database
+    const imagePromises = files.map(file => {
+      return new Promise<string>((resolve, reject) => {
+        const reader = new FileReader()
+        reader.onload = (e) => {
+          const dataUrl = e.target?.result as string
+          console.log('🔍 PROJECTS ADMIN DEBUG - File converted to data URL successfully')
+          resolve(dataUrl)
+        }
+        reader.onerror = (e) => {
+          console.error('🔍 PROJECTS ADMIN DEBUG - FileReader error:', e)
+          reject(new Error('Failed to read file'))
+        }
+        reader.readAsDataURL(file)
+      })
+    })
+    
+    try {
+      const imageUrls = await Promise.all(imagePromises)
+      console.log('🔍 PROJECTS ADMIN DEBUG - All images converted successfully')
+      setFormData(prev => ({ ...prev, images: [...prev.images, ...imageUrls] }))
+    } catch (error) {
+      console.error('🔍 PROJECTS ADMIN DEBUG - Error converting images:', error)
+      alert('Failed to process images. Please try again.')
+    }
   }
 
   const removeImage = (index: number) => {

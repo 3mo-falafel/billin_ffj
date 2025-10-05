@@ -160,19 +160,26 @@ export default function ProjectsPage() {
                       onClick={() => setSelectedProject(project)}>
                   <CardHeader className="p-0">
                     <div className="relative h-56 overflow-hidden">
-                      {project.images.length > 0 ? (
+                      {project.images && Array.isArray(project.images) && project.images.length > 0 ? (
                         <img
                           src={project.images[0]}
                           alt={project.name}
                           className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
                           onError={(e) => {
+                            console.log('🔍 PROJECTS PUBLIC DEBUG - Image failed to load:', project.images[0])
                             const target = e.target as HTMLImageElement;
                             target.src = '/placeholder.jpg';
+                          }}
+                          onLoad={() => {
+                            console.log('🔍 PROJECTS PUBLIC DEBUG - Image loaded successfully:', project.images[0])
                           }}
                         />
                       ) : (
                         <div className="w-full h-full bg-gray-200 flex items-center justify-center">
                           <ImageIcon className="w-16 h-16 text-gray-400" />
+                          <div className="text-xs text-gray-500 mt-2">
+                            {project.images ? `${project.images.length} images` : 'No images'}
+                          </div>
                         </div>
                       )}
                       <div className="absolute top-4 left-4 flex space-x-2">
@@ -260,12 +267,13 @@ export default function ProjectsPage() {
                   <CardContent className="p-6">
                     <div className="flex gap-6">
                       <div className="w-24 h-24 flex-shrink-0">
-                        {project.images.length > 0 ? (
+                        {project.images && Array.isArray(project.images) && project.images.length > 0 ? (
                           <img
                             src={project.images[0]}
                             alt={project.name}
                             className="w-full h-full object-cover rounded-lg"
                             onError={(e) => {
+                              console.log('🔍 PROJECTS PUBLIC DEBUG - Small image failed to load:', project.images[0])
                               const target = e.target as HTMLImageElement;
                               target.src = '/placeholder.jpg';
                             }}
@@ -368,13 +376,14 @@ export default function ProjectsPage() {
             
             {/* Image Gallery */}
             <div className="relative h-80 overflow-hidden">
-              {selectedProject.images.length > 0 ? (
+              {selectedProject.images && Array.isArray(selectedProject.images) && selectedProject.images.length > 0 ? (
                 <>
                   <img
                     src={selectedProject.images[currentImageIndex]}
                     alt={selectedProject.name}
                     className="w-full h-full object-cover"
                     onError={(e) => {
+                      console.log('🔍 PROJECTS PUBLIC DEBUG - Modal image failed to load:', selectedProject.images[currentImageIndex])
                       const target = e.target as HTMLImageElement;
                       target.src = '/placeholder.jpg';
                     }}

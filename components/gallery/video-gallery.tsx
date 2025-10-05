@@ -5,7 +5,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { useLanguage } from "@/hooks/use-language"
 import { Play, Video, Clock } from "lucide-react"
-import { createClient } from "@/lib/supabase/client"
+// Using API endpoints instead of Supabase client
 
 interface GalleryVideo {
   id: string
@@ -32,34 +32,51 @@ export function VideoGallery() {
       setLoading(true)
       setError(null)
       try {
-        const supabase = createClient()
-        const { data, error } = await supabase
-          .from("gallery")
-          .select("*")
-          .eq("media_type", "video")
-          .order("created_at", { ascending: false })
-        if (error) throw error
-        if (active && data) {
-          // Extract cover images from description field
-          const videosWithCovers = data.map(video => {
-            const coverMatch = video.description_en?.match(/COVER_IMAGE:([^|]+)/);
-            const coverImage = coverMatch ? coverMatch[1] : null;
+        console.log('🔍 VIDEO GALLERY PUBLIC DEBUG - Loading videos from API...')
+        
+        const response = await fetch('/api/gallery?media_type=video&active=true')
+        
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`)
+        }
+        
+        const result = await response.json()
+        console.log('🔍 VIDEO GALLERY PUBLIC DEBUG - API response:', result)
+        
+        if (active) {
+          if (result.data) {
+            const data = result.data
+            console.log('🔍 VIDEO GALLERY PUBLIC DEBUG - Raw video data:', data.length, 'items')
             
-            // Clean description by removing cover image info
-            const cleanDescription = video.description_en?.replace(/\s*\|\s*COVER_IMAGE:[^|]+/, '') || '';
-            const cleanDescriptionAr = video.description_ar?.replace(/\s*\|\s*COVER_IMAGE:[^|]+/, '') || '';
+            // Extract cover images from description field
+            const videosWithCovers = data.map((video: GalleryVideo) => {
+              const coverMatch = video.description_en?.match(/COVER_IMAGE:([^|]+)/);
+              const coverImage = coverMatch ? coverMatch[1] : null;
+              
+              // Clean description by removing cover image info
+              const cleanDescription = video.description_en?.replace(/\s*\|\s*COVER_IMAGE:[^|]+/, '') || '';
+              const cleanDescriptionAr = video.description_ar?.replace(/\s*\|\s*COVER_IMAGE:[^|]+/, '') || '';
+              
+              return {
+                ...video,
+                cover_image: coverImage,
+                description_en: cleanDescription,
+                description_ar: cleanDescriptionAr
+              };
+            });
             
-            return {
-              ...video,
-              cover_image: coverImage,
-              description_en: cleanDescription,
-              description_ar: cleanDescriptionAr
-            };
-          });
-          
-          setVideos(videosWithCovers);
+            console.log('🔍 VIDEO GALLERY PUBLIC DEBUG - Processed videos:', videosWithCovers.length, 'videos')
+            setVideos(videosWithCovers);
+          } else if (result.error) {
+            console.error('🔍 VIDEO GALLERY PUBLIC DEBUG - API error:', result.error)
+            setError(result.error)
+          } else {
+            console.error('🔍 VIDEO GALLERY PUBLIC DEBUG - Unexpected response format')
+            setError('Unexpected response format')
+          }
         }
       } catch (e: any) {
+        console.error('🔍 VIDEO GALLERY PUBLIC DEBUG - Error loading videos:', e)
         if (active) setError(e.message || "Failed to load videos")
       } finally {
         if (active) setLoading(false)
