@@ -1,6 +1,6 @@
 'use server'
 
-import { createClient } from '@/lib/supabase/server'
+import { createClient } from '@/lib/db/client'
 import { revalidatePath } from 'next/cache'
 
 /**
@@ -10,8 +10,8 @@ import { revalidatePath } from 'next/cache'
 
 export async function insertRecord(table: string, data: any) {
   try {
-    const supabase = await createClient()
-    const result = await supabase.from(table).insert([data])
+    const db = createClient()
+    const result = await db.from(table).insert([data])
     
     if (result.error) {
       return { success: false, error: result.error.message }
@@ -29,8 +29,8 @@ export async function insertRecord(table: string, data: any) {
 
 export async function updateRecord(table: string, id: string, data: any) {
   try {
-    const supabase = await createClient()
-    const result = await supabase.from(table).update(data).eq('id', id)
+    const db = createClient()
+    const result = await db.from(table).update(data).eq('id', id)
     
     if (result.error) {
       return { success: false, error: result.error.message }
@@ -49,8 +49,8 @@ export async function updateRecord(table: string, id: string, data: any) {
 
 export async function deleteRecord(table: string, id: string) {
   try {
-    const supabase = await createClient()
-    const result = await supabase.from(table).delete().eq('id', id)
+    const db = createClient()
+    const result = await db.from(table).delete().eq('id', id)
     
     if (result.error) {
       return { success: false, error: result.error.message }
@@ -68,8 +68,8 @@ export async function deleteRecord(table: string, id: string) {
 
 export async function toggleFeatured(table: string, id: string, currentValue: boolean) {
   try {
-    const supabase = await createClient()
-    const result = await supabase
+    const db = createClient()
+    const result = await db
       .from(table)
       .update({ is_featured: !currentValue })
       .eq('id', id)

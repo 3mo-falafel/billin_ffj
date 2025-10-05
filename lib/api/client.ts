@@ -158,6 +158,112 @@ class ApiClient {
     }
   }
 
+  // Scholarships API methods
+  scholarships = {
+    getAll: (params?: { limit?: number; category?: string; active?: boolean }) => {
+      const searchParams = new URLSearchParams()
+      if (params?.limit) searchParams.set('limit', params.limit.toString())
+      if (params?.category) searchParams.set('category', params.category)
+      if (params?.active !== undefined) searchParams.set('active', params.active.toString())
+      
+      const query = searchParams.toString()
+      return this.request(`/scholarships${query ? `?${query}` : ''}`)
+    },
+
+    getById: (id: string) => {
+      return this.request(`/scholarships/${id}`)
+    },
+
+    create: (data: any) => {
+      return this.request('/scholarships', {
+        method: 'POST',
+        body: JSON.stringify(data)
+      })
+    },
+
+    update: (id: string, data: any) => {
+      return this.request(`/scholarships/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(data)
+      })
+    },
+
+    delete: (id: string) => {
+      return this.request(`/scholarships/${id}`, {
+        method: 'DELETE'
+      })
+    }
+  }
+
+  // Projects API methods
+  projects = {
+    getAll: (params?: { limit?: number; status?: string; featured?: boolean; active?: boolean }) => {
+      const searchParams = new URLSearchParams()
+      if (params?.limit) searchParams.set('limit', params.limit.toString())
+      if (params?.status) searchParams.set('status', params.status)
+      if (params?.featured !== undefined) searchParams.set('featured', params.featured.toString())
+      if (params?.active !== undefined) searchParams.set('active', params.active.toString())
+      
+      const query = searchParams.toString()
+      return this.request(`/projects${query ? `?${query}` : ''}`)
+    },
+
+    getById: (id: string) => {
+      return this.request(`/projects/${id}`)
+    },
+
+    create: (data: any) => {
+      return this.request('/projects', {
+        method: 'POST',
+        body: JSON.stringify(data)
+      })
+    },
+
+    update: (id: string, data: any) => {
+      return this.request(`/projects/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(data)
+      })
+    },
+
+    delete: (id: string) => {
+      return this.request(`/projects/${id}`, {
+        method: 'DELETE'
+      })
+    }
+  }
+
+  // Homepage Gallery API methods
+  homepageGallery = {
+    getAll: (params?: { active?: boolean }) => {
+      const searchParams = new URLSearchParams()
+      if (params?.active !== undefined) searchParams.set('active', params.active.toString())
+      
+      const query = searchParams.toString()
+      return this.request(`/homepage-gallery${query ? `?${query}` : ''}`)
+    },
+
+    create: (data: any) => {
+      return this.request('/homepage-gallery', {
+        method: 'POST',
+        body: JSON.stringify(data)
+      })
+    },
+
+    update: (id: string, data: any) => {
+      return this.request(`/homepage-gallery/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(data)
+      })
+    },
+
+    delete: (id: string) => {
+      return this.request(`/homepage-gallery/${id}`, {
+        method: 'DELETE'
+      })
+    }
+  }
+
   // Generic table methods (for backward compatibility with Supabase-like syntax)
   from(table: string) {
     return {

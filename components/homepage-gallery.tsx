@@ -5,7 +5,7 @@ import { useLanguage } from "@/hooks/use-language"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
 import { ArrowRight, ArrowLeft } from "lucide-react"
-import { createClient } from "@/lib/supabase/client"
+import { createClient } from "@/lib/api/client"
 
 interface GalleryItem {
   id: number
@@ -26,12 +26,8 @@ export function HomepageGallery() {
   useEffect(() => {
     async function fetchGalleryItems() {
       try {
-        const supabase = createClient()
-        const { data, error } = await supabase
-          .from('homepage_gallery')
-          .select('*')
-          .eq('is_active', true)
-          .order('display_order', { ascending: true })
+        const api = createClient()
+        const { data, error } = await api.homepageGallery.getAll({ active: true })
 
         if (error) {
           console.error('Error fetching gallery items:', error)

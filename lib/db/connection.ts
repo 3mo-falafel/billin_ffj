@@ -12,9 +12,19 @@ const poolConfig: PoolConfig = {
   password: process.env.DATABASE_PASSWORD || '',
   max: 20, // Maximum number of clients in the pool
   idleTimeoutMillis: 30000, // Close idle clients after 30 seconds
-  connectionTimeoutMillis: 10000, // Return an error after 10 seconds if connection could not be established
+  connectionTimeoutMillis: 20000, // Return an error after 20 seconds if connection could not be established
   ssl: process.env.DATABASE_SSL === 'true' ? { rejectUnauthorized: false } : false,
 }
+
+// Log configuration for debugging (without password)
+console.log('Database configuration:', {
+  host: poolConfig.host,
+  port: poolConfig.port,
+  database: poolConfig.database,
+  user: poolConfig.user,
+  ssl: poolConfig.ssl,
+  hasPassword: !!poolConfig.password
+})
 
 // Create a single pool instance to be shared across the application
 let pool: Pool | null = null
