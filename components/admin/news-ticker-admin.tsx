@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Switch } from "@/components/ui/switch"
 import { Badge } from "@/components/ui/badge"
 import { useToast } from "@/hooks/use-toast"
-import { createClient } from "@/lib/supabase/client"
+import { createClient } from "@/lib/api/client"
 import { Plus, Edit, Trash2, Save, X, Eye, EyeOff } from "lucide-react"
 
 interface NewsTickerItem {
@@ -42,11 +42,11 @@ export function NewsTickerAdmin() {
   async function loadItems() {
     try {
       setLoading(true)
-      const supabase = createClient()
-      const { data, error } = await supabase
-        .from("news_ticker")
+      const client = createClient()
+      const { data, error } = await client.news_ticker
         .select("*")
         .order("display_order", { ascending: true })
+        .execute()
       
       if (error) throw error
       setItems(data || [])
@@ -63,12 +63,11 @@ export function NewsTickerAdmin() {
 
   async function saveItem() {
     try {
-      const supabase = createClient()
+      const client = createClient()
       
       if (editingItem) {
         // Update existing item
-        const { error } = await supabase
-          .from("news_ticker")
+        const { error } = await client.news_ticker
           .update({
             message_en: formData.message_en,
             message_ar: formData.message_ar,
@@ -76,6 +75,7 @@ export function NewsTickerAdmin() {
             display_order: formData.display_order
           })
           .eq("id", editingItem.id)
+          .execute()
         
         if (error) throw error
         
@@ -85,14 +85,14 @@ export function NewsTickerAdmin() {
         })
       } else {
         // Create new item
-        const { error } = await supabase
-          .from("news_ticker")
+        const { error } = await client.news_ticker
           .insert([{
             message_en: formData.message_en,
             message_ar: formData.message_ar,
             is_active: formData.is_active,
             display_order: formData.display_order || items.length
           }])
+          .execute()
         
         if (error) throw error
         
@@ -115,11 +115,11 @@ export function NewsTickerAdmin() {
 
   async function deleteItem(id: string) {
     try {
-      const supabase = createClient()
-      const { error} = await supabase
-        .from("news_ticker")
+      const client = createClient()
+      const { error } = await client.news_ticker
         .delete()
         .eq("id", id)
+        .execute()
       
       if (error) throw error
       
@@ -140,11 +140,11 @@ export function NewsTickerAdmin() {
 
   async function toggleActive(id: string, currentState: boolean) {
     try {
-      const supabase = createClient()
-      const { error } = await supabase
-        .from("news_ticker")
+      const client = createClient()
+      const { error } = await client.news_ticker
         .update({ is_active: !currentState })
         .eq("id", id)
+        .execute()
       
       if (error) throw error
       loadItems()

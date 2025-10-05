@@ -305,6 +305,87 @@ class ApiClient {
     }
   }
 
+  // News Ticker specific methods
+  news_ticker = {
+    select: (columns = '*') => ({
+      order: (column: string, options?: { ascending?: boolean }) => ({
+        execute: async () => {
+          try {
+            const response = await this.request('/news-ticker')
+            const items = response.data || []
+            
+            // Sort if needed
+            if (column && options) {
+              items.sort((a: any, b: any) => {
+                const aVal = a[column]
+                const bVal = b[column]
+                const comparison = aVal < bVal ? -1 : aVal > bVal ? 1 : 0
+                return options.ascending === false ? -comparison : comparison
+              })
+            }
+            
+            return { data: items, error: null }
+          } catch (error) {
+            return { data: null, error }
+          }
+        }
+      })
+    }),
+    insert: (data: any[]) => ({
+      execute: async () => {
+        try {
+          if (data.length === 1) {
+            const response = await this.request('/news-ticker', {
+              method: 'POST',
+              body: JSON.stringify(data[0])
+            })
+            return { data: response.data, error: null }
+          } else {
+            // Handle multiple inserts if needed
+            const results = await Promise.all(
+              data.map(item => this.request('/news-ticker', {
+                method: 'POST', 
+                body: JSON.stringify(item)
+              }))
+            )
+            return { data: results.map(r => r.data), error: null }
+          }
+        } catch (error) {
+          return { data: null, error }
+        }
+      }
+    }),
+    update: (data: any) => ({
+      eq: (column: string, value: any) => ({
+        execute: async () => {
+          try {
+            const response = await this.request(`/news-ticker/${value}`, {
+              method: 'PUT',
+              body: JSON.stringify(data)
+            })
+            return { data: response.data, error: null }
+          } catch (error) {
+            return { data: null, error }
+          }
+        }
+      })
+    }),
+    delete: () => ({
+      eq: (column: string, value: any) => ({
+        execute: async () => {
+          try {
+            await this.request(`/news-ticker/${value}`, {
+              method: 'DELETE'
+            })
+            return { error: null }
+          } catch (error) {
+            return { error }
+          }
+        }
+      })
+    })
+  }
+
   // Auth methods (placeholder - would need to implement based on your auth system)
   auth = {
     getUser: async () => {

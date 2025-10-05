@@ -84,13 +84,15 @@ export default function ProjectsAdminEnhanced() {
 
   const loadProjects = async () => {
     try {
-      const { createClient } = await import('@/lib/supabase/client')
-      const supabase = createClient()
+      const response = await fetch('/api/projects')
+      const result = await response.json()
       
-      const { data, error } = await supabase
-        .from('projects')
-        .select('*')
-        .order('created_at', { ascending: false })
+      if (result.success) {
+        setProjects(result.data || [])
+        return
+      }
+      
+      const error = result.error
       
       if (error) {
         console.error('Error loading projects:', error)
@@ -130,27 +132,6 @@ export default function ProjectsAdminEnhanced() {
         ])
         return
       }
-      
-      const projectData = Array.isArray(data) ? data : []
-      console.log('Loaded projects data:', projectData)
-      
-      const transformedProjects: Project[] = projectData.map((item: any) => ({
-        id: item.id.toString(),
-        name: item.name,
-        description: item.description,
-        location: item.location,
-        goal_amount: item.goal_amount || 0,
-        raised_amount: item.raised_amount || 0,
-        start_date: item.start_date,
-        end_date: item.end_date,
-        status: item.status || 'planning',
-        images: item.images ? (Array.isArray(item.images) ? item.images : [item.images]) : [],
-        is_featured: item.is_featured || false,
-        is_active: item.is_active !== false,
-        created_at: item.created_at
-      }))
-      
-      setProjects(transformedProjects)
       
     } catch (error) {
       console.error('Error loading projects:', error)
@@ -216,18 +197,21 @@ export default function ProjectsAdminEnhanced() {
       }
 
       if (editingProject) {
-        const { error } = await supabase
-          .from('projects')
-          .update(projectData)
-          .eq('id', editingProject.id)
-        
-        if (error) throw error
+        const response = await fetch(`/api/projects/${editingProject.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(projectData)
+        })
+        const result = await response.json()
+        if (!result.success) throw new Error(result.error)
       } else {
-        const { error } = await supabase
-          .from('projects')
-          .insert([projectData])
-        
-        if (error) throw error
+        const response = await fetch('/api/projects', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(projectData)
+        })
+        const result = await response.json()
+        if (!result.success) throw new Error(result.error)
       }
 
       await loadProjects()
@@ -247,15 +231,11 @@ export default function ProjectsAdminEnhanced() {
   const handleDelete = async (id: string) => {
     if (confirm('Are you sure you want to delete this project?')) {
       try {
-        const { createClient } = await import('@/lib/supabase/client')
-        const supabase = createClient()
-        
-        const { error } = await supabase
-          .from('projects')
-          .delete()
-          .eq('id', id)
-        
-        if (error) throw error
+        const response = await fetch(`/api/projects/${id}`, {
+          method: 'DELETE'
+        })
+        const result = await response.json()
+        if (!result.success) throw new Error(result.error)
         
         await loadProjects()
         alert('Project deleted successfully!')
