@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { CalendarIcon, TagIcon } from "lucide-react"
@@ -26,6 +27,7 @@ export function NewsList() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const { language } = useLanguage()
+  const router = useRouter()
 
   useEffect(() => {
     loadNews()
@@ -129,7 +131,11 @@ export function NewsList() {
             </h3>
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
               {featuredNews.map((item) => (
-                <Card key={item.id} className="hover:shadow-lg transition-shadow">
+                <Card 
+                  key={item.id} 
+                  className="hover:shadow-lg transition-shadow cursor-pointer"
+                  onClick={() => router.push(`/news/${item.id}`)}
+                >
                   {item.image_url && (
                     <div className="aspect-video bg-gray-200 rounded-t-lg overflow-hidden">
                       <img 
@@ -182,7 +188,11 @@ export function NewsList() {
             </h3>
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
               {regularNews.map((item) => (
-                <Card key={item.id} className="hover:shadow-md transition-shadow">
+                <Card 
+                  key={item.id} 
+                  className="hover:shadow-md transition-shadow cursor-pointer"
+                  onClick={() => router.push(`/news/${item.id}`)}
+                >
                   {item.image_url && (
                     <div className="aspect-video bg-gray-200 rounded-t-lg overflow-hidden">
                       <img 
