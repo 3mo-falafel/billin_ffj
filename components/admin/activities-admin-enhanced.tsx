@@ -37,7 +37,6 @@ import {
 import { Badge } from '../ui/badge'
 import { Card, CardContent, CardHeader } from '../ui/card'
 import ImageUpload from './image-upload'
-import { translateToArabic } from '@/lib/utils/admin-helpers'
 
 interface Activity {
   id: string
@@ -73,12 +72,13 @@ export default function ActivitiesAdminEnhanced() {
   const [filterStatus, setFilterStatus] = useState<string>('all')
   const [showAddDialog, setShowAddDialog] = useState(false)
   const [editingActivity, setEditingActivity] = useState<Activity | null>(null)
-  const [isTranslating, setIsTranslating] = useState(false)
 
   // Form state
   const [formData, setFormData] = useState({
     title_en: '',
+    title_ar: '',
     description_en: '',
+    description_ar: '',
     category: '',
     date: '',
     time: '',
@@ -88,41 +88,10 @@ export default function ActivitiesAdminEnhanced() {
     status: 'draft' as Activity['status']
   })
 
-  // Auto-generated Arabic translations
-  const [translations, setTranslations] = useState({
-    title_ar: '',
-    description_ar: ''
-  })
-
   useEffect(() => {
     // Load activities from API/database
     loadActivities()
   }, [])
-
-  // Auto-translate when English fields change
-  useEffect(() => {
-    const translateFields = async () => {
-      if (formData.title_en && !isTranslating) {
-        setIsTranslating(true)
-        try {
-          const titleAr = await translateToArabic(formData.title_en)
-          const descriptionAr = formData.description_en ? await translateToArabic(formData.description_en) : ''
-          
-          setTranslations({
-            title_ar: titleAr,
-            description_ar: descriptionAr
-          })
-        } catch (error) {
-          console.error('Translation failed:', error)
-        } finally {
-          setIsTranslating(false)
-        }
-      }
-    }
-
-    const debounceTimer = setTimeout(translateFields, 1000)
-    return () => clearTimeout(debounceTimer)
-  }, [formData.title_en, formData.description_en])
 
   const loadActivities = async () => {
     try {
@@ -183,15 +152,14 @@ export default function ActivitiesAdminEnhanced() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    setIsTranslating(true) // Using this as loading state
     
     try {
       // Prepare data for API (matching the database schema)
       const apiData = {
         title_en: formData.title_en,
-        title_ar: translations.title_ar,
+        title_ar: formData.title_ar,
         description_en: formData.description_en,
-        description_ar: translations.description_ar,
+        description_ar: formData.description_ar,
         image_url: formData.images.length > 0 ? formData.images[0] : null,
         video_url: null, // Can be extended later
         date: formData.date,
@@ -236,15 +204,15 @@ export default function ActivitiesAdminEnhanced() {
     } catch (error: any) {
       console.error('🔍 ACTIVITIES ADMIN DEBUG - Error submitting:', error)
       alert(`Error: ${error.message || 'Failed to save activity'}`)
-    } finally {
-      setIsTranslating(false)
     }
   }
 
   const resetForm = () => {
     setFormData({
       title_en: '',
+      title_ar: '',
       description_en: '',
+      description_ar: '',
       category: '',
       date: '',
       time: '',
@@ -253,13 +221,15 @@ export default function ActivitiesAdminEnhanced() {
       images: [],
       status: 'draft'
     })
-    setTranslations({ title_ar: '', description_ar: '' })
   }
 
   const handleEdit = (activity: Activity) => {
     setFormData({
       title_en: activity.title_en,
+      title_ar: activity.title_ar,
+      title_ar: activity.title_ar,
       description_en: activity.description_en,
+      description_ar: activity.description_ar,
       category: activity.category,
       date: activity.date,
       time: activity.time,
@@ -267,10 +237,6 @@ export default function ActivitiesAdminEnhanced() {
       capacity: activity.capacity,
       images: activity.images,
       status: activity.status
-    })
-    setTranslations({
-      title_ar: activity.title_ar,
-      description_ar: activity.description_ar
     })
     setEditingActivity(activity)
     setShowAddDialog(true)
@@ -312,7 +278,7 @@ export default function ActivitiesAdminEnhanced() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold mb-2">Activities Management</h1>
-            <p className="text-purple-100">Create and manage community activities with automatic Arabic translation</p>
+            <p className="text-purple-100">Create and manage community activities in both English and Arabic</p>
           </div>
           <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
             <DialogTrigger asChild>
@@ -370,27 +336,39 @@ export default function ActivitiesAdminEnhanced() {
                     </div>
                   </div>
 
-                  {/* Arabic Content (Auto-translated) */}
+                  {/* Arabic Content */}
                   <div className="space-y-4">
                     <div className="bg-green-50 p-4 rounded-lg">
                       <h3 className="font-semibold text-green-800 mb-3 flex items-center">
-                        🇵🇸 Arabic Content (Auto-translated)
-                        {isTranslating && <Languages className="w-4 h-4 ml-2 animate-spin" />}
+                        🇵🇸 Arabic Content
                       </h3>
                       
                       <div className="space-y-4">
                         <div>
-                          <Label className="text-sm font-medium">Title (Arabic)</Label>
-                          <div className="mt-1 p-3 bg-white border rounded-md text-right" dir="rtl">
-                            {translations.title_ar || 'Translation will appear automatically...'}
-                          </div>
+                          <Label htmlFor="title_ar" className="text-sm font-medium">Title (Arabic)</Label>
+                          <Input
+                            id="title_ar"
+                            value={formData.title_ar}
+                            onChange={(e) => setFormData(prev => ({ ...prev, title_ar: e.target.value }))}
+                            placeholder="أدخل عنوان النشاط بالعربية"
+                            required
+                            className="mt-1 text-right"
+                            dir="rtl"
+                          />
                         </div>
                         
                         <div>
-                          <Label className="text-sm font-medium">Description (Arabic)</Label>
-                          <div className="mt-1 p-3 bg-white border rounded-md min-h-[100px] text-right" dir="rtl">
-                            {translations.description_ar || 'Translation will appear automatically...'}
-                          </div>
+                          <Label htmlFor="description_ar" className="text-sm font-medium">Description (Arabic)</Label>
+                          <Textarea
+                            id="description_ar"
+                            value={formData.description_ar}
+                            onChange={(e) => setFormData(prev => ({ ...prev, description_ar: e.target.value }))}
+                            placeholder="اكتب وصف النشاط بالعربية"
+                            rows={4}
+                            required
+                            className="mt-1 text-right"
+                            dir="rtl"
+                          />
                         </div>
                       </div>
                     </div>

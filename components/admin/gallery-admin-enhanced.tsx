@@ -40,7 +40,6 @@ import { Badge } from '../ui/badge'
 import { Card, CardContent, CardHeader } from '../ui/card'
 import { Switch } from '../ui/switch'
 import ImageUpload from './image-upload'
-import { translateToArabic } from '@/lib/utils/admin-helpers'
 
 interface GalleryItem {
   id: string
@@ -79,12 +78,13 @@ export default function GalleryAdminEnhanced() {
   const [showAddDialog, setShowAddDialog] = useState(false)
   const [editingItem, setEditingItem] = useState<GalleryItem | null>(null)
   const [previewImage, setPreviewImage] = useState<string | null>(null)
-  const [isTranslating, setIsTranslating] = useState(false)
 
   // Form state
   const [formData, setFormData] = useState({
     title_en: '',
+    title_ar: '',
     description_en: '',
+    description_ar: '',
     category: '',
     date_taken: '',
     photographer: '',
@@ -95,40 +95,9 @@ export default function GalleryAdminEnhanced() {
     tags: [] as string[]
   })
 
-  // Auto-generated Arabic translations
-  const [translations, setTranslations] = useState({
-    title_ar: '',
-    description_ar: ''
-  })
-
   useEffect(() => {
     loadGalleryItems()
   }, [])
-
-  // Auto-translate when English fields change
-  useEffect(() => {
-    const translateFields = async () => {
-      if (formData.title_en && !isTranslating) {
-        setIsTranslating(true)
-        try {
-          const titleAr = await translateToArabic(formData.title_en)
-          const descriptionAr = formData.description_en ? await translateToArabic(formData.description_en) : ''
-          
-          setTranslations({
-            title_ar: titleAr,
-            description_ar: descriptionAr
-          })
-        } catch (error) {
-          console.error('Translation failed:', error)
-        } finally {
-          setIsTranslating(false)
-        }
-      }
-    }
-
-    const debounceTimer = setTimeout(translateFields, 1000)
-    return () => clearTimeout(debounceTimer)
-  }, [formData.title_en, formData.description_en])
 
   const loadGalleryItems = async () => {
     try {
@@ -186,9 +155,9 @@ export default function GalleryAdminEnhanced() {
       // Prepare data for database
       const itemData = {
         title_en: formData.title_en,
-        title_ar: translations.title_ar,
+        title_ar: formData.title_ar,
         description_en: formData.description_en,
-        description_ar: translations.description_ar,
+        description_ar: formData.description_ar,
         media_url: formData.images[0] || '',
         media_type: 'image',
         category: formData.category
@@ -239,7 +208,9 @@ export default function GalleryAdminEnhanced() {
   const resetForm = () => {
     setFormData({
       title_en: '',
+      title_ar: '',
       description_en: '',
+      description_ar: '',
       category: '',
       date_taken: '',
       photographer: '',
@@ -249,13 +220,14 @@ export default function GalleryAdminEnhanced() {
       is_public: true,
       tags: []
     })
-    setTranslations({ title_ar: '', description_ar: '' })
   }
 
   const handleEdit = (item: GalleryItem) => {
     setFormData({
       title_en: item.title_en,
+      title_ar: item.title_ar,
       description_en: item.description_en,
+      description_ar: item.description_ar,
       category: item.category,
       date_taken: item.date_taken,
       photographer: item.photographer,
@@ -264,10 +236,6 @@ export default function GalleryAdminEnhanced() {
       is_featured: item.is_featured,
       is_public: item.is_public,
       tags: item.tags
-    })
-    setTranslations({
-      title_ar: item.title_ar,
-      description_ar: item.description_ar
     })
     setEditingItem(item)
     setShowAddDialog(true)
@@ -384,27 +352,39 @@ export default function GalleryAdminEnhanced() {
                       </div>
                     </div>
 
-                    {/* Arabic Content (Auto-translated) */}
+                    {/* Arabic Content */}
                     <div className="space-y-4">
                       <div className="bg-green-50 p-4 rounded-lg">
                         <h3 className="font-semibold text-green-800 mb-3 flex items-center">
-                          🇵🇸 Arabic Content (Auto-translated)
-                          {isTranslating && <Languages className="w-4 h-4 ml-2 animate-spin" />}
+                          🇵🇸 Arabic Content
                         </h3>
                         
                         <div className="space-y-4">
                           <div>
-                            <Label className="text-sm font-medium">Title (Arabic)</Label>
-                            <div className="mt-1 p-3 bg-white border rounded-md text-right" dir="rtl">
-                              {translations.title_ar || 'Translation will appear automatically...'}
-                            </div>
+                            <Label htmlFor="title_ar" className="text-sm font-medium">Title (Arabic)</Label>
+                            <Input
+                              id="title_ar"
+                              value={formData.title_ar}
+                              onChange={(e) => setFormData(prev => ({ ...prev, title_ar: e.target.value }))}
+                              placeholder="أدخل عنوان الصورة بالعربية"
+                              required
+                              className="mt-1 text-right"
+                              dir="rtl"
+                            />
                           </div>
                           
                           <div>
-                            <Label className="text-sm font-medium">Description (Arabic)</Label>
-                            <div className="mt-1 p-3 bg-white border rounded-md min-h-[100px] text-right" dir="rtl">
-                              {translations.description_ar || 'Translation will appear automatically...'}
-                            </div>
+                            <Label htmlFor="description_ar" className="text-sm font-medium">Description (Arabic)</Label>
+                            <Textarea
+                              id="description_ar"
+                              value={formData.description_ar}
+                              onChange={(e) => setFormData(prev => ({ ...prev, description_ar: e.target.value }))}
+                              placeholder="اكتب وصف الصور بالعربية"
+                              rows={4}
+                              required
+                              className="mt-1 text-right"
+                              dir="rtl"
+                            />
                           </div>
                         </div>
                       </div>
