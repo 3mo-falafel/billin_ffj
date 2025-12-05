@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { CalendarIcon, MapPinIcon, UsersIcon } from "lucide-react"
@@ -27,6 +28,7 @@ export function ActivitiesList() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const { language } = useLanguage()
+  const router = useRouter()
 
   useEffect(() => {
     loadActivities()
@@ -131,7 +133,11 @@ export function ActivitiesList() {
             </h3>
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
               {featuredActivities.map((activity) => (
-                <Card key={activity.id} className="hover:shadow-lg transition-shadow">
+                <Card 
+                  key={activity.id} 
+                  className="hover:shadow-lg transition-shadow cursor-pointer"
+                  onClick={() => router.push(`/activities/${activity.id}`)}
+                >
                   {activity.image_url && (
                     <div className="aspect-video bg-gray-200 rounded-t-lg overflow-hidden">
                       <img 
@@ -198,7 +204,11 @@ export function ActivitiesList() {
             </h3>
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
               {regularActivities.map((activity) => (
-                <Card key={activity.id} className="hover:shadow-md transition-shadow">
+                <Card 
+                  key={activity.id} 
+                  className="hover:shadow-md transition-shadow cursor-pointer"
+                  onClick={() => router.push(`/activities/${activity.id}`)}
+                >
                   {activity.image_url && (
                     <div className="aspect-video bg-gray-200 rounded-t-lg overflow-hidden">
                       <img 

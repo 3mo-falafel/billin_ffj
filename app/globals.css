@@ -276,8 +276,32 @@
   }
 }
 
+@keyframes scroll-right {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
 .animate-scroll {
-  animation: scroll-left 60s linear infinite;
+  animation-name: var(--scroll-animation, scroll-left);
+  animation-duration: 60s;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+}
+
+.scroll-rtl {
+  --scroll-animation: scroll-right;
+  direction: rtl;
+  text-align: right;
+}
+
+.scroll-ltr {
+  --scroll-animation: scroll-left;
+  direction: ltr;
+  text-align: left;
 }
 
 /* News ticker sticks below navigation */

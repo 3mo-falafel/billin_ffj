@@ -46,14 +46,14 @@ export function Navigation() {
       className="sticky top-0 z-50 w-full border-b border-border/60 bg-background/70 backdrop-blur-xl supports-[backdrop-filter]:bg-background/55 shadow-sm"
       aria-label="Main navigation"
     >
-      <div className="w-full flex h-24 items-center px-2 sm:px-4 lg:px-6 relative overflow-hidden">
-        {/* Logo + Identity - Absolute Left */}
-        <div className="flex items-center gap-2 shrink-0">
+      <div className="w-full flex h-20 md:h-24 items-center px-3 sm:px-4 lg:px-6 relative">
+        {/* Logo + Identity */}
+        <div className="flex items-center gap-2 shrink-0 min-w-0 flex-1 lg:flex-none">
           <Link
             href="/"
-            className="group flex items-center gap-2 rounded-xl py-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60"
+            className="group flex items-center gap-2 rounded-xl py-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60 min-w-0"
           >
-            <span className="relative inline-flex h-16 w-16 shrink-0 overflow-hidden rounded-xl border border-border/60 bg-muted/50 backdrop-blur-sm transition-all group-hover:shadow-lg">
+            <span className="relative inline-flex h-12 w-12 md:h-16 md:w-16 shrink-0 overflow-hidden rounded-xl border border-border/60 bg-muted/50 backdrop-blur-sm transition-all group-hover:shadow-lg">
               <Image
                 src="/bilin-logo.avif"
                 alt={getTranslation("brandName", language)}
@@ -62,19 +62,19 @@ export function Navigation() {
                 className="h-full w-full object-cover object-center"
               />
             </span>
-            <div className={`flex flex-col justify-center ${isArabic ? "items-end text-right" : "items-start text-left"}`}>
-              <div className="text-lg font-bold tracking-tight text-foreground leading-tight whitespace-nowrap">
+            <div className={`hidden sm:flex flex-col justify-center min-w-0 ${isArabic ? "items-end text-right" : "items-start text-left"}`}>
+              <div className="text-base md:text-lg font-bold tracking-tight text-foreground leading-tight truncate max-w-[150px] md:max-w-none">
                 {getTranslation("brandName", language)}
               </div>
-              <div className="text-sm font-medium text-muted-foreground leading-tight whitespace-nowrap">
+              <div className="text-xs md:text-sm font-medium text-muted-foreground leading-tight truncate max-w-[150px] md:max-w-none">
                 {getTranslation("brandTagline", language)} • {getTranslation("established", language)}
               </div>
             </div>
           </Link>
         </div>
 
-        {/* Desktop Nav - Positioned to avoid overlap */}
-        <div className="hidden md:flex flex-1 justify-center ml-8">
+        {/* Desktop Nav - Hidden on mobile and tablet */}
+        <div className="hidden lg:flex flex-1 justify-center mx-4 xl:mx-8">
           <ul
             className={`relative flex gap-1 rounded-full border border-border/60 bg-muted/30 p-1.5 backdrop-blur supports-[backdrop-filter]:bg-muted/40 ${
               isArabic ? "flex-row-reverse" : ""
@@ -83,12 +83,12 @@ export function Navigation() {
             {navItems.map((item) => {
               const active = pathname === item.href
               return (
-                <li key={item.key} className="">
+                <li key={item.key}>
                   <Link
                     href={item.href}
                     onClick={(e) => handleNavClick(item, e)}
                     data-active={active || undefined}
-                    className={`group relative inline-flex min-w-[3.5rem] items-center justify-center whitespace-nowrap rounded-full px-4 py-2 text-xs font-medium transition-all duration-200 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60 sm:text-sm ${
+                    className={`group relative inline-flex min-w-[3.5rem] items-center justify-center whitespace-nowrap rounded-full px-3 xl:px-4 py-2 text-xs xl:text-sm font-medium transition-all duration-200 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60 ${
                       isArabic ? "arabic-text" : "english-text"
                     } text-muted-foreground data-[active]:text-foreground`}
                   >
@@ -106,27 +106,25 @@ export function Navigation() {
         </div>
 
         {/* Right side actions */}
-        <div className="flex items-center gap-3 ml-auto shrink-0 min-w-[200px]">
-          <div className="hidden md:flex items-center gap-3">
+        <div className="flex items-center gap-2 md:gap-3 shrink-0">
+          <div className="hidden lg:flex items-center gap-3">
             <Button
               asChild
               size="sm"
-              className="relative overflow-hidden rounded-full bg-gradient-to-r from-primary via-accent to-secondary px-5 font-semibold text-primary-foreground shadow hover:from-primary/90 hover:via-accent/90 hover:to-secondary/90 focus-visible:ring-2 focus-visible:ring-ring/60 whitespace-nowrap min-w-[80px]"
+              className="relative overflow-hidden rounded-full bg-gradient-to-r from-primary via-accent to-secondary px-4 xl:px-5 font-semibold text-primary-foreground shadow hover:from-primary/90 hover:via-accent/90 hover:to-secondary/90 focus-visible:ring-2 focus-visible:ring-ring/60 whitespace-nowrap"
             >
               <Link href="/donate">{getTranslation("donate", language)}</Link>
             </Button>
-            <div className="min-w-[80px]">
-              <LanguageToggle />
-            </div>
+            <LanguageToggle />
           </div>
 
-          {/* Mobile controls */}
-          <div className="flex items-center gap-2 md:hidden">
+          {/* Mobile & Tablet controls */}
+          <div className="flex items-center gap-2 lg:hidden">
             <LanguageToggle />
             <Button
               variant="ghost"
               size="icon"
-              className="rounded-full"
+              className="rounded-full h-9 w-9"
               onClick={() => setIsMenuOpen((o) => !o)}
               aria-expanded={isMenuOpen}
               aria-label="Toggle menu"
@@ -137,39 +135,41 @@ export function Navigation() {
         </div>
       </div>
 
-      {/* Mobile panel */}
+      {/* Mobile & Tablet panel */}
       <div
-        className={`md:hidden transition-[max-height,opacity] duration-300 ease-out overflow-hidden ${
-          isMenuOpen ? "max-h-[640px] opacity-100" : "max-h-0 opacity-0"
+        className={`lg:hidden transition-[max-height,opacity] duration-300 ease-out overflow-hidden ${
+          isMenuOpen ? "max-h-[80vh] opacity-100" : "max-h-0 opacity-0"
         }`}
       >
-        <div className="px-4 pb-6 pt-3">
+        <div className="px-3 sm:px-4 pb-6 pt-3 overflow-y-auto max-h-[calc(80vh-2rem)]">
           {/* Mobile brand extended info */}
           <div
-            className={`mb-3 flex items-center gap-4 rounded-xl border border-border/50 bg-muted/40 px-4 py-3 backdrop-blur-sm ${
+            className={`mb-3 flex items-center gap-3 rounded-xl border border-border/50 bg-muted/40 px-3 py-2.5 backdrop-blur-sm ${
               isArabic ? "flex-row-reverse text-right" : ""
             }`}
           >
-            <span className="relative inline-flex h-14 w-14 shrink-0 overflow-hidden rounded-xl border border-border/60 bg-background">
+            <span className="relative inline-flex h-12 w-12 shrink-0 overflow-hidden rounded-xl border border-border/60 bg-background">
               <Image
                 src="/bilin-logo.avif"
                 alt={getTranslation("brandName", language)}
-                width={56}
-                height={56}
+                width={48}
+                height={48}
                 className="h-full w-full object-cover"
               />
             </span>
-            <div className={`flex flex-col justify-center ${isArabic ? "items-end arabic-text text-right" : "english-text items-start text-left"}`}>
-              <div className="text-base font-bold text-foreground leading-tight">
+            <div className={`flex flex-col justify-center min-w-0 flex-1 ${isArabic ? "items-end arabic-text text-right" : "english-text items-start text-left"}`}>
+              <div className="text-sm md:text-base font-bold text-foreground leading-tight truncate w-full">
                 {getTranslation("brandName", language)}
               </div>
-              <div className="text-sm font-medium text-muted-foreground leading-tight">
+              <div className="text-xs md:text-sm font-medium text-muted-foreground leading-tight truncate w-full">
                 {getTranslation("brandTagline", language)} • {getTranslation("established", language)}
               </div>
             </div>
           </div>
+          
+          {/* Navigation Links */}
           <ul
-            className={`flex flex-col gap-1 rounded-2xl border border-border/60 bg-muted/40 p-2 backdrop-blur-sm supports-[backdrop-filter]:bg-muted/50 ${
+            className={`flex flex-col gap-1 rounded-2xl border border-border/60 bg-muted/40 p-2 backdrop-blur-sm supports-[backdrop-filter]:bg-muted/50 mb-3 ${
               isArabic ? "items-end" : "items-start"
             }`}
           >
@@ -179,9 +179,12 @@ export function Navigation() {
                 <li key={item.key} className="w-full">
                   <Link
                     href={item.href}
-                    onClick={(e) => handleNavClick(item, e)}
+                    onClick={(e) => {
+                      handleNavClick(item, e)
+                      setIsMenuOpen(false)
+                    }}
                     data-active={active || undefined}
-                    className={`group relative block w-full rounded-xl px-4 py-3 text-sm font-medium transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60 ${
+                    className={`group relative block w-full rounded-xl px-4 py-2.5 text-sm font-medium transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60 ${
                       isArabic ? "arabic-text text-right" : "english-text"
                     } text-muted-foreground data-[active]:text-foreground`}
                   >
@@ -192,15 +195,15 @@ export function Navigation() {
               )
             })}
           </ul>
-          <div className="mt-4 flex gap-3">
-            <Button
-              asChild
-              className="flex-1 rounded-full bg-gradient-to-r from-primary via-accent to-secondary font-semibold text-primary-foreground shadow hover:from-primary/90 hover:via-accent/90 hover:to-secondary/90"
-              onClick={() => setIsMenuOpen(false)}
-            >
-              <Link href="/donate">{getTranslation("donate", language)}</Link>
-            </Button>
-          </div>
+          
+          {/* Donate Button */}
+          <Button
+            asChild
+            className="w-full rounded-full bg-gradient-to-r from-primary via-accent to-secondary font-semibold text-primary-foreground shadow hover:from-primary/90 hover:via-accent/90 hover:to-secondary/90"
+            onClick={() => setIsMenuOpen(false)}
+          >
+            <Link href="/donate">{getTranslation("donate", language)}</Link>
+          </Button>
         </div>
       </div>
     </nav>

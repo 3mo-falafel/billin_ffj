@@ -92,6 +92,8 @@ export function NewsTicker() {
 
   const newsTexts = news.map(item => language === 'en' ? item.message_en : item.message_ar)
   const combinedNews = newsTexts.join(' • ')
+  const tickerDirection = isArabic ? 'rtl' : 'ltr'
+  const flowClass = isArabic ? 'scroll-rtl' : 'scroll-ltr'
 
   return (
     <div className="news-ticker sticky top-24 w-full h-10 shadow-lg z-40">
@@ -134,8 +136,9 @@ export function NewsTicker() {
           <div className="absolute inset-0 bg-white/90 backdrop-blur-sm"></div>
           <div 
             className={`relative whitespace-nowrap animate-scroll text-gray-900 font-medium text-sm py-2 px-4 ${
-              isArabic ? 'arabic-text' : 'english-text'
+              isArabic ? 'arabic-text scroll-rtl' : 'english-text scroll-ltr'
             }`}
+            dir={tickerDirection}
           >
             {combinedNews}
           </div>
