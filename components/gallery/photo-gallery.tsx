@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import Image from "next/image"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { useLanguage } from "@/hooks/use-language"
@@ -94,6 +95,9 @@ export function PhotoGallery() {
             
             const albums = Array.from(albumMap.values())
             console.log('🔍 GALLERY PUBLIC DEBUG - Created albums:', albums.length, 'albums')
+            albums.forEach((album, idx) => {
+              console.log(`🔍 Album ${idx + 1}:`, album.title, '- Images:', album.images.length, 'First image:', album.images[0]?.substring(0, 100))
+            })
             setPhotoAlbums(albums)
           } else if (result.error) {
             console.error('🔍 GALLERY PUBLIC DEBUG - API error:', result.error)
@@ -219,23 +223,25 @@ export function PhotoGallery() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {paginatedAlbums.map(album => (
-            <Card key={album.id} className="border-border overflow-hidden group cursor-pointer" onClick={() => setSelectedAlbum(album)}>
-              <div className="relative aspect-video overflow-hidden">
+            <Card key={album.id} className="border-border overflow-hidden group cursor-pointer" onClick={() => { setSelectedAlbum(album); setCurrentImageIndex(0); }}>
+              <div className="relative aspect-video overflow-hidden bg-gray-100">
                 {album.images.length > 0 ? (
                   <img
                     src={album.images[0]}
                     alt={album.title}
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    loading="lazy"
                     onError={(e) => {
                       const target = e.target as HTMLImageElement;
-                      target.style.display = 'none';
-                      target.nextElementSibling?.classList.remove('hidden');
+                      target.style.display = 'block';
+                      target.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="400" height="300"%3E%3Crect fill="%23f3f4f6" width="400" height="300"/%3E%3Ctext fill="%239ca3af" font-family="sans-serif" font-size="18" x="50%25" y="50%25" text-anchor="middle" dominant-baseline="middle"%3EImage Unavailable%3C/text%3E%3C/svg%3E';
                     }}
                   />
-                ) : null}
-                <div className="w-full h-full bg-gray-200 flex items-center justify-center hidden">
-                  <Camera className="w-16 h-16 text-gray-400" />
-                </div>
+                ) : (
+                  <div className="w-full h-full bg-gray-200 flex items-center justify-center">
+                    <Camera className="w-16 h-16 text-gray-400" />
+                  </div>
+                )}
                 <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-300 flex items-center justify-center">
                   <Eye className="h-8 w-8 text-white opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                 </div>
@@ -312,14 +318,15 @@ export function PhotoGallery() {
               
               {/* Image Gallery */}
               {selectedAlbum.images.length > 0 && (
-                <div className="relative h-96 overflow-hidden">
+                <div className="relative h-96 overflow-hidden bg-gray-900">
                   <img
                     src={selectedAlbum.images[currentImageIndex]}
                     alt={selectedAlbum.title}
-                    className="w-full h-full object-cover"
+                    className="w-full h-full object-contain"
                     onError={(e) => {
                       const target = e.target as HTMLImageElement;
-                      target.src = '/placeholder.jpg';
+                      console.error('Image load error:', selectedAlbum.images[currentImageIndex]);
+                      target.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="800" height="600"%3E%3Crect fill="%23374151" width="800" height="600"/%3E%3Ctext fill="%23ffffff" font-family="sans-serif" font-size="24" x="50%25" y="50%25" text-anchor="middle" dominant-baseline="middle"%3EImage Unavailable%3C/text%3E%3C/svg%3E';
                     }}
                   />
                   {selectedAlbum.images.length > 1 && (
