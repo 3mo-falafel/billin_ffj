@@ -352,13 +352,8 @@ export function PhotoGallery() {
                     alt={`${selectedAlbum.title} - Image ${currentImageIndex + 1} of ${selectedAlbum.images.length}`}
                     className="w-full h-full object-contain"
                     style={{ imageRendering: 'auto' }}
-                    onLoad={(e) => {
-                      const target = e.target as HTMLImageElement;
-                      console.log('🔍 Main image loaded:', currentImageIndex, 'Size:', target.naturalWidth, 'x', target.naturalHeight)
-                    }}
                     onError={(e) => {
                       const target = e.target as HTMLImageElement;
-                      console.error('🔍 Main image load error:', selectedAlbum.images[currentImageIndex].substring(0, 100));
                       target.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="800" height="600"%3E%3Crect fill="%23f3f4f6" width="800" height="600"/%3E%3Ctext fill="%236b7280" font-family="sans-serif" font-size="24" x="50%25" y="50%25" text-anchor="middle" dominant-baseline="middle"%3EImage Unavailable%3C/text%3E%3C/svg%3E';
                     }}
                   />
@@ -403,10 +398,7 @@ export function PhotoGallery() {
                             ? 'ring-4 ring-blue-500 scale-105 shadow-xl' 
                             : 'ring-2 ring-gray-300 hover:ring-blue-400 hover:scale-105 shadow-md'
                         }`}
-                        onClick={() => {
-                          console.log('🔍 Thumbnail clicked:', index, 'Image URL:', image.substring(0, 100))
-                          setCurrentImageIndex(index)
-                        }}
+                        onClick={() => setCurrentImageIndex(index)}
                         aria-label={`View image ${index + 1} of ${selectedAlbum.images.length}`}
                       >
                         {/* Thumbnail Image */}
@@ -415,13 +407,8 @@ export function PhotoGallery() {
                           alt={`${selectedAlbum.title} - Image ${index + 1}`}
                           className="absolute inset-0 w-full h-full object-cover"
                           loading="eager"
-                          onLoad={(e) => {
-                            const target = e.target as HTMLImageElement;
-                            console.log('🔍 Thumbnail loaded successfully:', index, 'Size:', target.naturalWidth, 'x', target.naturalHeight)
-                          }}
                           onError={(e) => {
                             const target = e.target as HTMLImageElement;
-                            console.error('🔍 Thumbnail failed to load:', index, 'URL:', image.substring(0, 100))
                             target.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="100" height="100"%3E%3Crect fill="%23e5e7eb" width="100" height="100"/%3E%3Ctext fill="%236b7280" font-family="sans-serif" font-size="14" font-weight="bold" x="50%25" y="50%25" text-anchor="middle" dominant-baseline="middle"%3E' + (index + 1) + '%3C/text%3E%3C/svg%3E';
                           }}
                         />
