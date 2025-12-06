@@ -86,15 +86,21 @@ class ApiClient {
 
   // Gallery API methods
   gallery = {
-    getAll: (params?: { limit?: number; category?: string; media_type?: string; active?: boolean }) => {
+    getAll: (params?: { limit?: number; category?: string; media_type?: string; active?: boolean; metadata_only?: boolean }) => {
       const searchParams = new URLSearchParams()
       if (params?.limit) searchParams.set('limit', params.limit.toString())
       if (params?.category) searchParams.set('category', params.category)
       if (params?.media_type) searchParams.set('media_type', params.media_type)
       if (params?.active !== undefined) searchParams.set('active', params.active.toString())
+      if (params?.metadata_only) searchParams.set('metadata_only', 'true')
       
       const query = searchParams.toString()
       return this.request(`/gallery${query ? `?${query}` : ''}`)
+    },
+
+    // Get images for a specific album by title
+    getAlbumImages: (albumTitle: string) => {
+      return this.request(`/gallery/album?title=${encodeURIComponent(albumTitle)}`)
     },
 
     getById: (id: string) => {

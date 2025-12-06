@@ -44,6 +44,7 @@ export function PhotoGallery() {
   const [selectedCategory, setSelectedCategory] = useState("all")
   const [photoAlbums, setPhotoAlbums] = useState<PhotoAlbum[]>([])
   const [loading, setLoading] = useState(true)
+  const [loadingAlbum, setLoadingAlbum] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [selectedAlbum, setSelectedAlbum] = useState<PhotoAlbum | null>(null)
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
@@ -56,7 +57,8 @@ export function PhotoGallery() {
       setLoading(true)
       setError(null)
       try {
-        const response = await fetch('/api/gallery?media_type=image&active=true')
+        // Use metadata_only=true for fast loading (no image data)
+        const response = await fetch('/api/gallery?media_type=image&active=true&metadata_only=true')
         
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`)
@@ -68,7 +70,7 @@ export function PhotoGallery() {
           if (result.data) {
             const data = result.data
             
-            // Group photos by title to create albums
+            // Group photos by title to create albums (count only, no images yet)
             const albumMap = new Map<string, PhotoAlbum>()
             
             data.forEach((item: GalleryItem) => {
@@ -78,28 +80,25 @@ export function PhotoGallery() {
                   id: item.id,
                   title: item.title_en || 'Untitled Album',
                   location: 'Bil\'in, Palestine',
-                  images: [],
+                  images: [], // Will be loaded on demand
                   category: item.category || 'general',
                   created_at: item.created_at || ''
                 })
               }
-              if (item.media_url) {
-                albumMap.get(key)!.images.push(item.media_url)
-              }
+              // Count images but don't store URLs yet (we'll fetch on click)
+              const album = albumMap.get(key)!
+              album.images.push('placeholder') // Just for counting
             })
             
             const albums = Array.from(albumMap.values())
             setPhotoAlbums(albums)
           } else if (result.error) {
-            console.error('🔍 GALLERY PUBLIC DEBUG - API error:', result.error)
             setError(result.error)
           } else {
-            console.error('🔍 GALLERY PUBLIC DEBUG - Unexpected response format')
             setError('Unexpected response format')
           }
         }
       } catch (e: any) {
-        console.error('🔍 GALLERY PUBLIC DEBUG - Error loading gallery:', e)
         if (isMounted) setError(e.message || "Failed to load gallery")
       } finally {
         if (isMounted) setLoading(false)
@@ -188,6 +187,40 @@ export function PhotoGallery() {
     }
   }
 
+  // Load album images on demand when an album is clicked
+  const openAlbum = async (album: PhotoAlbum) => {
+    setLoadingAlbum(true)
+    setCurrentImageIndex(0)
+    
+    try {
+      // Fetch the actual images for this album
+      const response = await fetch(`/api/gallery/album?title=${encodeURIComponent(album.title)}`)
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+      
+      const result = await response.json()
+      
+      if (result.data && result.data.length > 0) {
+        // Update album with real image URLs
+        const albumWithImages: PhotoAlbum = {
+          ...album,
+          images: result.data.map((img: { media_url: string }) => img.media_url)
+        }
+        setSelectedAlbum(albumWithImages)
+      } else {
+        // Fallback: show album without images
+        setSelectedAlbum(album)
+      }
+    } catch (error) {
+      console.error('Error loading album images:', error)
+      setSelectedAlbum(album)
+    } finally {
+      setLoadingAlbum(false)
+    }
+  }
+
   return (
     <section className="py-16 bg-background">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -235,31 +268,18 @@ export function PhotoGallery() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {paginatedAlbums.map(album => (
-            <Card key={album.id} className="border-border overflow-hidden group cursor-pointer" onClick={() => { setSelectedAlbum(album); setCurrentImageIndex(0); }}>
+            <Card key={album.id} className="border-border overflow-hidden group cursor-pointer" onClick={() => openAlbum(album)}>
               <div className="relative aspect-video overflow-hidden bg-gray-100">
-                {album.images.length > 0 ? (
-                  <img
-                    src={album.images[0]}
-                    alt={album.title}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                    loading="lazy"
-                    onError={(e) => {
-                      const target = e.target as HTMLImageElement;
-                      target.style.display = 'block';
-                      target.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="400" height="300"%3E%3Crect fill="%23f3f4f6" width="400" height="300"/%3E%3Ctext fill="%239ca3af" font-family="sans-serif" font-size="18" x="50%25" y="50%25" text-anchor="middle" dominant-baseline="middle"%3EImage Unavailable%3C/text%3E%3C/svg%3E';
-                    }}
-                  />
-                ) : (
-                  <div className="w-full h-full bg-gray-200 flex items-center justify-center">
-                    <Camera className="w-16 h-16 text-gray-400" />
-                  </div>
-                )}
+                {/* Show placeholder thumbnail since we only have metadata */}
+                <div className="w-full h-full bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center">
+                  <Camera className="w-16 h-16 text-gray-400" />
+                </div>
                 <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-300 flex items-center justify-center">
                   <Eye className="h-8 w-8 text-white opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                 </div>
-                {album.images.length > 1 && (
+                {album.images.length > 0 && (
                   <div className="absolute top-3 right-3 bg-black bg-opacity-70 text-white px-2 py-1 rounded text-sm">
-                    {album.images.length} photos
+                    {album.images.length} {album.images.length === 1 ? 'photo' : 'photos'}
                   </div>
                 )}
               </div>
@@ -275,7 +295,15 @@ export function PhotoGallery() {
           ))}
         </div>
 
-        {/* Pagination */}
+        {/* Loading overlay when opening album */}
+        {loadingAlbum && (
+          <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center">
+            <div className="bg-white rounded-lg p-6 flex flex-col items-center gap-3">
+              <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+              <p className="text-gray-700">{language === 'en' ? 'Loading album...' : 'جاري تحميل الألبوم...'}</p>
+            </div>
+          </div>
+        )}        {/* Pagination */}
         {totalPages > 1 && (
           <div className="flex justify-center items-center gap-2 mt-8">
             <Button

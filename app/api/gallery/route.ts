@@ -12,8 +12,15 @@ export async function GET(request: NextRequest) {
     const category = searchParams.get('category')
     const media_type = searchParams.get('media_type')
     const active = searchParams.get('active')
+    const metadataOnly = searchParams.get('metadata_only') === 'true'
     
-    let query = db.from('gallery').select('*')
+    // For metadata_only requests, we select only essential fields (no media_url)
+    // This dramatically improves performance for listing pages
+    const selectFields = metadataOnly 
+      ? 'id, title_en, title_ar, description_en, description_ar, media_type, cover_image, category, is_active, created_at'
+      : '*'
+    
+    let query = db.from('gallery').select(selectFields)
     
     if (category && category !== 'all') {
       query = query.eq('category', category)

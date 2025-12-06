@@ -39,6 +39,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs'
 interface PhotoAlbum {
   id: string
   title: string
+  title_en: string
   location: string
   images: string[]
   category: string
@@ -78,6 +79,7 @@ export default function GalleryAdminWrapper() {
   const [editingItem, setEditingItem] = useState<PhotoAlbum | VideoItem | null>(null)
   const [previewImage, setPreviewImage] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
+  const [isLoadingAlbum, setIsLoadingAlbum] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
 
   // Form state for photos
@@ -107,13 +109,16 @@ export default function GalleryAdminWrapper() {
       const { createClient } = await import('@/lib/api/client')
       const api = createClient()
       
-      // Load photo albums
-      const { data: photoData, error: photoError } = await api.gallery.getAll({ media_type: 'image' })
+      // Load photo albums (metadata only for fast loading)
+      const { data: photoData, error: photoError } = await api.gallery.getAll({ 
+        media_type: 'image',
+        metadata_only: true  // Only fetch metadata, not full base64 images
+      })
       
       if (photoError) {
         console.error('Error loading photos:', photoError)
       } else {
-        // Group photos by title to create albums
+        // Group photos by title to create albums (count only, no images)
         const albumMap = new Map<string, PhotoAlbum>()
         
         photoData?.forEach(item => {
@@ -122,15 +127,15 @@ export default function GalleryAdminWrapper() {
             albumMap.set(key, {
               id: item.id,
               title: item.title_en || 'Untitled Album',
+              title_en: item.title_en || 'Untitled Album',
               location: 'Bil\'in, Palestine',
               images: [],
               category: item.category || 'general',
               created_at: item.created_at
             })
           }
-          if (item.media_url) {
-            albumMap.get(key)!.images.push(item.media_url)
-          }
+          // Count images but don't store URLs yet (we'll fetch on demand)
+          albumMap.get(key)!.images.push('placeholder')
         })
         
         setPhotoAlbums(Array.from(albumMap.values()))
@@ -242,6 +247,82 @@ export default function GalleryAdminWrapper() {
     }
   }
 
+  const handleDeleteAlbum = async (albumTitle: string, imageCount: number) => {
+    const confirmMessage = `Are you sure you want to delete the entire album "${albumTitle}"?\n\nThis will permanently delete all ${imageCount} image(s) in this album.\n\nThis action cannot be undone.`
+    
+    if (confirm(confirmMessage)) {
+      try {
+        const response = await fetch('/api/gallery/album', {
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ albumTitle }),
+        })
+        
+        if (!response.ok) {
+          const errorText = await response.text()
+          throw new Error(`HTTP ${response.status}: ${errorText}`)
+        }
+        
+        const result = await response.json()
+        
+        if (result.error) {
+          throw new Error(result.error)
+        }
+        
+        // Reload data to refresh the list
+        await loadData()
+        alert(`Album "${albumTitle}" deleted successfully! (${result.deletedCount} images removed)`)
+        
+      } catch (error: any) {
+        console.error('Error deleting album:', error)
+        alert(`Failed to delete album: ${error.message}`)
+      }
+    }
+  }
+
+  // Load album images on demand for editing
+  const openEditAlbum = async (album: PhotoAlbum) => {
+    setIsLoadingAlbum(true)
+    setEditingItem(album)
+    
+    try {
+      // Fetch the actual images for this album
+      const response = await fetch(`/api/gallery/album?title=${encodeURIComponent(album.title_en)}`)
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+      
+      const result = await response.json()
+      
+      if (result.data && result.data.length > 0) {
+        const images = result.data.map((img: { media_url: string }) => img.media_url)
+        setPhotoFormData({
+          title: album.title,
+          location: album.location,
+          category: album.category,
+          images: images
+        })
+      } else {
+        setPhotoFormData({
+          title: album.title,
+          location: album.location,
+          category: album.category,
+          images: []
+        })
+      }
+      
+      setShowEditDialog(true)
+    } catch (error) {
+      console.error('Error loading album images:', error)
+      alert('Failed to load album images')
+    } finally {
+      setIsLoadingAlbum(false)
+    }
+  }
+
   const filteredPhotos = photoAlbums.filter(album => {
     const matchesSearch = album.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          album.location.toLowerCase().includes(searchTerm.toLowerCase())
@@ -330,6 +411,16 @@ export default function GalleryAdminWrapper() {
         </div>
       </div>
 
+      {/* Loading overlay when loading album for edit */}
+      {isLoadingAlbum && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center">
+          <div className="bg-white rounded-lg p-6 flex flex-col items-center gap-3">
+            <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+            <p className="text-gray-700">Loading album images...</p>
+          </div>
+        </div>
+      )}
+
       {/* Content Tabs */}
       <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'photos' | 'videos')}>
         <TabsList className="grid w-full grid-cols-2">
@@ -346,27 +437,22 @@ export default function GalleryAdminWrapper() {
                 return (
                   <Card key={album.id} className="group hover:shadow-lg transition-all duration-300 overflow-hidden">
                     <CardHeader className="p-0">
-                      {album.images.length > 0 && (
-                        <div className="relative aspect-square overflow-hidden bg-gray-100">
-                          <img
-                            src={album.images[0]}
-                            alt={album.title}
-                            loading="lazy"
-                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300 cursor-pointer"
-                            onClick={() => setPreviewImage(album.images[0])}
-                          />
-                          <div className="absolute top-3 left-3">
-                            <Badge className={`${categoryInfo.color} text-white`}>
-                              {categoryInfo.icon} {categoryInfo.label}
-                            </Badge>
-                          </div>
-                          <div className="absolute top-3 right-3">
-                            <Badge variant="secondary" className="bg-black bg-opacity-50 text-white">
-                              {album.images.length} photos
-                            </Badge>
-                          </div>
+                      <div className="relative aspect-square overflow-hidden bg-gradient-to-br from-gray-100 to-gray-200">
+                        {/* Placeholder thumbnail - images load on demand */}
+                        <div className="w-full h-full flex items-center justify-center">
+                          <ImageIcon className="w-16 h-16 text-gray-400" />
                         </div>
-                      )}
+                        <div className="absolute top-3 left-3">
+                          <Badge className={`${categoryInfo.color} text-white`}>
+                            {categoryInfo.icon} {categoryInfo.label}
+                          </Badge>
+                        </div>
+                        <div className="absolute top-3 right-3">
+                          <Badge variant="secondary" className="bg-black bg-opacity-50 text-white">
+                            {album.images.length} {album.images.length === 1 ? 'photo' : 'photos'}
+                          </Badge>
+                        </div>
+                      </div>
                     </CardHeader>
                     
                     <CardContent className="p-4">
@@ -382,26 +468,17 @@ export default function GalleryAdminWrapper() {
 
                         <div className="flex items-center justify-between pt-3 border-t">
                           <div className="flex space-x-2">
-                            <Button size="sm" variant="outline" onClick={() => {
-                              setEditingItem(album)
-                              setPhotoFormData({
-                                title: album.title,
-                                location: album.location,
-                                category: album.category,
-                                images: album.images
-                              })
-                              setShowEditDialog(true)
-                            }}>
+                            <Button size="sm" variant="outline" onClick={() => openEditAlbum(album)} disabled={isLoadingAlbum}>
                               <Edit className="w-4 h-4" />
                             </Button>
-                            <Button size="sm" variant="outline" onClick={() => setPreviewImage(album.images[0])}>
+                            <Button size="sm" variant="outline" onClick={() => alert('Preview: Click View button after selecting an album')} disabled={true}>
                               <Eye className="w-4 h-4" />
                             </Button>
                           </div>
                           <Button 
                             size="sm" 
                             variant="destructive" 
-                            onClick={() => handleDeletePhoto(album.id)}
+                            onClick={() => handleDeleteAlbum(album.title_en, album.images.length)}
                           >
                             <Trash2 className="w-4 h-4" />
                           </Button>
@@ -421,19 +498,12 @@ export default function GalleryAdminWrapper() {
                   <Card key={album.id} className="hover:shadow-md transition-shadow">
                     <CardContent className="p-6">
                       <div className="flex gap-6">
-                        {album.images.length > 0 && (
-                          <div className="relative w-32 h-32 flex-shrink-0">
-                            <img
-                              src={album.images[0]}
-                              alt={album.title}
-                              className="w-full h-full object-cover rounded-lg cursor-pointer"
-                              onClick={() => setPreviewImage(album.images[0])}
-                            />
-                            <Badge className="absolute top-2 left-2 text-xs bg-black bg-opacity-50 text-white">
-                              {album.images.length}
-                            </Badge>
-                          </div>
-                        )}
+                        <div className="relative w-32 h-32 flex-shrink-0 bg-gradient-to-br from-gray-100 to-gray-200 rounded-lg flex items-center justify-center">
+                          <ImageIcon className="w-10 h-10 text-gray-400" />
+                          <Badge className="absolute top-2 left-2 text-xs bg-black bg-opacity-50 text-white">
+                            {album.images.length}
+                          </Badge>
+                        </div>
                         
                         <div className="flex-1 space-y-3">
                           <div>
@@ -452,20 +522,11 @@ export default function GalleryAdminWrapper() {
 
                           <div className="flex items-center justify-between">
                             <div className="flex space-x-2">
-                            <Button size="sm" variant="outline" onClick={() => {
-                              setEditingItem(album)
-                              setPhotoFormData({
-                                title: album.title,
-                                location: album.location,
-                                category: album.category,
-                                images: album.images
-                              })
-                              setShowEditDialog(true)
-                            }}>
+                            <Button size="sm" variant="outline" onClick={() => openEditAlbum(album)} disabled={isLoadingAlbum}>
                               <Edit className="w-4 h-4 mr-1" />
-                              Edit
+                              {isLoadingAlbum ? 'Loading...' : 'Edit'}
                             </Button>
-                              <Button size="sm" variant="outline" onClick={() => setPreviewImage(album.images[0])}>
+                              <Button size="sm" variant="outline" onClick={() => alert('Preview: Click View button after editing an album')} disabled={true}>
                                 <Eye className="w-4 h-4 mr-1" />
                                 View
                               </Button>
@@ -474,10 +535,10 @@ export default function GalleryAdminWrapper() {
                             <Button 
                               size="sm" 
                               variant="destructive" 
-                              onClick={() => handleDeletePhoto(album.id)}
+                              onClick={() => handleDeleteAlbum(album.title_en, album.images.length)}
                             >
                               <Trash2 className="w-4 h-4 mr-1" />
-                              Delete
+                              Delete Album
                             </Button>
                           </div>
                         </div>
@@ -940,7 +1001,66 @@ export default function GalleryAdminWrapper() {
               </div>
               
               <div className="space-y-2">
-                <Label>Current Images ({photoFormData.images.length})</Label>
+                <div className="flex items-center justify-between">
+                  <Label>Current Images ({photoFormData.images.length})</Label>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => {
+                      const input = document.createElement('input')
+                      input.type = 'file'
+                      input.accept = 'image/*'
+                      input.multiple = true
+                      input.onchange = async (e) => {
+                        const files = (e.target as HTMLInputElement).files
+                        if (!files || files.length === 0) return
+                        
+                        const newImages: string[] = []
+                        for (const file of Array.from(files)) {
+                          // Compress the image
+                          const reader = new FileReader()
+                          const base64 = await new Promise<string>((resolve) => {
+                            reader.onload = () => resolve(reader.result as string)
+                            reader.readAsDataURL(file)
+                          })
+                          
+                          // Create image element for compression
+                          const img = new Image()
+                          const compressedBase64 = await new Promise<string>((resolve) => {
+                            img.onload = () => {
+                              const canvas = document.createElement('canvas')
+                              const maxWidth = 1200
+                              let width = img.width
+                              let height = img.height
+                              
+                              if (width > maxWidth) {
+                                height = (height * maxWidth) / width
+                                width = maxWidth
+                              }
+                              
+                              canvas.width = width
+                              canvas.height = height
+                              const ctx = canvas.getContext('2d')!
+                              ctx.drawImage(img, 0, 0, width, height)
+                              resolve(canvas.toDataURL('image/jpeg', 0.7))
+                            }
+                            img.src = base64
+                          })
+                          
+                          newImages.push(compressedBase64)
+                        }
+                        
+                        setPhotoFormData({ 
+                          ...photoFormData, 
+                          images: [...photoFormData.images, ...newImages] 
+                        })
+                      }
+                      input.click()
+                    }}
+                  >
+                    <Plus className="w-4 h-4 mr-1" /> Add Images
+                  </Button>
+                </div>
                 <div className="grid grid-cols-4 gap-2 max-h-60 overflow-y-auto border rounded-lg p-2 bg-gray-50">
                   {photoFormData.images.map((img, idx) => (
                     <div key={idx} className="relative group aspect-square">
@@ -968,7 +1088,7 @@ export default function GalleryAdminWrapper() {
                     </div>
                   ))}
                 </div>
-                <p className="text-sm text-muted-foreground">Click X to remove an image</p>
+                <p className="text-sm text-muted-foreground">Click X to remove images, or use &quot;Add Images&quot; button to add more</p>
               </div>
               
               <div className="flex justify-end gap-2">
@@ -984,9 +1104,30 @@ export default function GalleryAdminWrapper() {
                       return
                     }
                     
-                    // For simplicity, we'll keep the edit as updating all images with same title
-                    // In production, you'd want more granular control
-                    alert('Edit feature updates the album information. To modify images, please delete and recreate the album.')
+                    if (photoFormData.images.length === 0) {
+                      alert('Album must have at least one image')
+                      return
+                    }
+                    
+                    // Use the album API to update/add/remove images
+                    const response = await fetch('/api/gallery/album', {
+                      method: 'PUT',
+                      headers: {
+                        'Content-Type': 'application/json',
+                      },
+                      body: JSON.stringify({
+                        originalTitle: editingItem!.title_en,
+                        newTitle: photoFormData.title,
+                        location: photoFormData.location || 'Bil\'in, Palestine',
+                        category: photoFormData.category,
+                        images: photoFormData.images
+                      }),
+                    })
+                    
+                    if (!response.ok) {
+                      const errorData = await response.json()
+                      throw new Error(errorData.error || 'Failed to update album')
+                    }
                     
                     await loadData()
                     setShowEditDialog(false)
