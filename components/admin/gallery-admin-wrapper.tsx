@@ -382,7 +382,16 @@ export default function GalleryAdminWrapper() {
 
                         <div className="flex items-center justify-between pt-3 border-t">
                           <div className="flex space-x-2">
-                            <Button size="sm" variant="outline" onClick={() => setEditingItem(album)}>
+                            <Button size="sm" variant="outline" onClick={() => {
+                              setEditingItem(album)
+                              setPhotoFormData({
+                                title: album.title,
+                                location: album.location,
+                                category: album.category,
+                                images: album.images
+                              })
+                              setShowEditDialog(true)
+                            }}>
                               <Edit className="w-4 h-4" />
                             </Button>
                             <Button size="sm" variant="outline" onClick={() => setPreviewImage(album.images[0])}>
@@ -645,36 +654,61 @@ export default function GalleryAdminWrapper() {
                   accept="image/*"
                   onChange={async (e) => {
                     const files = Array.from(e.target.files || [])
+                    if (files.length === 0) return
+                    
                     console.log('🔍 GALLERY ADMIN DEBUG - Starting image uploads...', files.length, 'files')
                     
-                    // Convert files to data URLs for storage in database
-                    const imagePromises = files.map(file => {
-                      return new Promise<string>((resolve, reject) => {
+                    // Function to compress image
+                    const compressImage = (file: File, maxWidth: number = 1200, quality: number = 0.7): Promise<string> => {
+                      return new Promise((resolve, reject) => {
                         const reader = new FileReader()
                         reader.onload = (e) => {
-                          const dataUrl = e.target?.result as string
-                          console.log('🔍 GALLERY ADMIN DEBUG - File converted to data URL successfully')
-                          resolve(dataUrl)
+                          const img = new window.Image()
+                          img.onload = () => {
+                            const canvas = document.createElement('canvas')
+                            let width = img.width
+                            let height = img.height
+                            
+                            // Scale down if too large
+                            if (width > maxWidth) {
+                              height = (height * maxWidth) / width
+                              width = maxWidth
+                            }
+                            
+                            canvas.width = width
+                            canvas.height = height
+                            const ctx = canvas.getContext('2d')
+                            ctx?.drawImage(img, 0, 0, width, height)
+                            
+                            // Convert to compressed JPEG
+                            const compressedDataUrl = canvas.toDataURL('image/jpeg', quality)
+                            console.log('🔍 GALLERY ADMIN DEBUG - Compressed image:', file.name, 'from', Math.round(file.size/1024), 'KB to', Math.round(compressedDataUrl.length/1024), 'KB')
+                            resolve(compressedDataUrl)
+                          }
+                          img.onerror = () => reject(new Error('Failed to load image'))
+                          img.src = e.target?.result as string
                         }
-                        reader.onerror = (e) => {
-                          console.error('🔍 GALLERY ADMIN DEBUG - FileReader error:', e)
-                          reject(new Error('Failed to read file'))
-                        }
+                        reader.onerror = () => reject(new Error('Failed to read file'))
                         reader.readAsDataURL(file)
                       })
-                    })
+                    }
                     
                     try {
-                      const imageUrls = await Promise.all(imagePromises)
-                      console.log('🔍 GALLERY ADMIN DEBUG - All images converted successfully')
-                      setPhotoFormData({ ...photoFormData, images: imageUrls })
+                      // Compress all images (replaces existing, not adds to them)
+                      const imageUrls = await Promise.all(files.map(file => compressImage(file)))
+                      console.log('🔍 GALLERY ADMIN DEBUG - All images compressed successfully:', imageUrls.length)
+                      // Replace images completely (not append)
+                      setPhotoFormData(prev => ({ ...prev, images: imageUrls }))
                     } catch (error) {
                       console.error('🔍 GALLERY ADMIN DEBUG - Error converting images:', error)
                       alert('Failed to process images. Please try again.')
                     }
                   }}
                 />
-                <p className="text-sm text-muted-foreground">Select multiple images for the album</p>
+                <p className="text-sm text-muted-foreground">Select images for the album (replaces any previous selection)</p>
+                {photoFormData.images.length > 0 && (
+                  <p className="text-sm text-green-600">✅ {photoFormData.images.length} image(s) ready to upload</p>
+                )}
               </div>
               
               <div className="flex justify-end gap-2">

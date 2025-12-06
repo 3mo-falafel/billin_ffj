@@ -56,8 +56,6 @@ export function PhotoGallery() {
       setLoading(true)
       setError(null)
       try {
-        console.log('🔍 GALLERY PUBLIC DEBUG - Loading gallery photos from API...')
-        
         const response = await fetch('/api/gallery?media_type=image&active=true')
         
         if (!response.ok) {
@@ -65,12 +63,10 @@ export function PhotoGallery() {
         }
         
         const result = await response.json()
-        console.log('🔍 GALLERY PUBLIC DEBUG - API response:', result)
         
         if (isMounted) {
           if (result.data) {
             const data = result.data
-            console.log('🔍 GALLERY PUBLIC DEBUG - Raw gallery data:', data.length, 'items')
             
             // Group photos by title to create albums
             const albumMap = new Map<string, PhotoAlbum>()
@@ -88,16 +84,11 @@ export function PhotoGallery() {
                 })
               }
               if (item.media_url) {
-                console.log('🔍 GALLERY PUBLIC DEBUG - Adding image to album:', key, 'URL length:', item.media_url.length)
                 albumMap.get(key)!.images.push(item.media_url)
               }
             })
             
             const albums = Array.from(albumMap.values())
-            console.log('🔍 GALLERY PUBLIC DEBUG - Created albums:', albums.length, 'albums')
-            albums.forEach((album, idx) => {
-              console.log(`🔍 Album ${idx + 1}:`, album.title, '- Images:', album.images.length, 'First image:', album.images[0]?.substring(0, 100))
-            })
             setPhotoAlbums(albums)
           } else if (result.error) {
             console.error('🔍 GALLERY PUBLIC DEBUG - API error:', result.error)
