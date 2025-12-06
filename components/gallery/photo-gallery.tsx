@@ -46,6 +46,8 @@ export function PhotoGallery() {
   const [error, setError] = useState<string | null>(null)
   const [selectedAlbum, setSelectedAlbum] = useState<PhotoAlbum | null>(null)
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
+  const [currentPage, setCurrentPage] = useState(1)
+  const ITEMS_PER_PAGE = 12
 
   useEffect(() => {
     let isMounted = true
@@ -115,6 +117,17 @@ export function PhotoGallery() {
   }, [])
 
   const filtered = selectedCategory === "all" ? photoAlbums : photoAlbums.filter(p => p.category === selectedCategory)
+  
+  // Pagination logic
+  const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE)
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE
+  const endIndex = startIndex + ITEMS_PER_PAGE
+  const paginatedAlbums = filtered.slice(startIndex, endIndex)
+  
+  // Reset to page 1 when category changes
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [selectedCategory])
 
   const nextImage = () => {
     if (selectedAlbum && selectedAlbum.images.length > 0) {
@@ -205,7 +218,7 @@ export function PhotoGallery() {
         )}
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filtered.map(album => (
+          {paginatedAlbums.map(album => (
             <Card key={album.id} className="border-border overflow-hidden group cursor-pointer" onClick={() => setSelectedAlbum(album)}>
               <div className="relative aspect-video overflow-hidden">
                 {album.images.length > 0 ? (
@@ -243,6 +256,33 @@ export function PhotoGallery() {
             </Card>
           ))}
         </div>
+
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <div className="flex justify-center items-center gap-2 mt-8">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+              disabled={currentPage === 1}
+            >
+              {language === "en" ? "Previous" : "السابق"}
+            </Button>
+            <span className="text-sm text-muted-foreground">
+              {language === "en" 
+                ? `Page ${currentPage} of ${totalPages}` 
+                : `صفحة ${currentPage} من ${totalPages}`}
+            </span>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+              disabled={currentPage === totalPages}
+            >
+              {language === "en" ? "Next" : "التالي"}
+            </Button>
+          </div>
+        )}
 
         {/* Album Modal */}
         {selectedAlbum && (

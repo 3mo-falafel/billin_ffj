@@ -1,14 +1,22 @@
 'use client'
 
 import { useState, useRef } from 'react'
-import { Upload, X, Image as ImageIcon, Eye } from 'lucide-react'
+import { Upload, X, Image as ImageIcon, Eye, Loader2 } from 'lucide-react'
 import { Button } from '../ui/button'
-import { validateImageFile, uploadImage } from '@/lib/utils/admin-helpers'
 
 interface ImageUploadProps {
   onImagesChange: (images: string[]) => void
   maxImages?: number
   existingImages?: string[]
+}
+
+interface UploadedImage {
+  url: string
+  thumbnailUrl?: string
+  filename: string
+  size: number
+  width: number
+  height: number
 }
 
 export default function ImageUpload({ 
@@ -18,6 +26,7 @@ export default function ImageUpload({
 }: ImageUploadProps) {
   const [images, setImages] = useState<string[]>(existingImages)
   const [uploading, setUploading] = useState(false)
+  const [uploadProgress, setUploadProgress] = useState<string>('')
   const [previewImage, setPreviewImage] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -30,19 +39,50 @@ export default function ImageUpload({
     }
 
     setUploading(true)
+    setUploadProgress(`Uploading ${files.length} image(s)...`)
 
     try {
-      const uploadPromises = files.map(async (file) => {
-        validateImageFile(file)
-        return await uploadImage(file)
+      const uploadPromises = files.map(async (file, index) => {
+        // Validate file size and type
+        if (file.size > 10 * 1024 * 1024) {
+          throw new Error(`${file.name}: File too large (max 10MB)`)
+        }
+        
+        if (!file.type.match(/^image\/(jpeg|jpg|png|webp)$/)) {
+          throw new Error(`${file.name}: Invalid file type`)
+        }
+
+        setUploadProgress(`Uploading ${index + 1}/${files.length}...`)
+
+        const formData = new FormData()
+        formData.append('file', file)
+        formData.append('maxWidth', '1600')
+        formData.append('quality', '80')
+        formData.append('generateThumbnail', 'true')
+
+        const response = await fetch('/api/upload', {
+          method: 'POST',
+          body: formData
+        })
+
+        if (!response.ok) {
+          const error = await response.json()
+          throw new Error(error.error || 'Upload failed')
+        }
+
+        const result = await response.json()
+        return result.data.url // Return the full image URL
       })
 
-      const uploadedImages = await Promise.all(uploadPromises)
-      const newImages = [...images, ...uploadedImages]
+      const uploadedUrls = await Promise.all(uploadPromises)
+      const newImages = [...images, ...uploadedUrls]
       setImages(newImages)
       onImagesChange(newImages)
+      setUploadProgress('Upload complete!')
+      setTimeout(() => setUploadProgress(''), 2000)
     } catch (error) {
       alert(error instanceof Error ? error.message : 'Failed to upload images')
+      setUploadProgress('')
     } finally {
       setUploading(false)
       if (fileInputRef.current) {
@@ -71,15 +111,30 @@ export default function ImageUpload({
           disabled={uploading || images.length >= maxImages}
           className="bg-gradient-to-r from-blue-500 to-purple-500 text-white border-0 hover:from-blue-600 hover:to-purple-600"
         >
-          <Upload className="w-4 h-4 mr-2" />
-          {uploading ? 'Uploading...' : 'Add Images'}
+          {uploading ? (
+            <>
+              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              Uploading...
+            </>
+          ) : (
+            <>
+              <Upload className="w-4 h-4 mr-2" />
+              Add Images
+            </>
+          )}
         </Button>
       </div>
+
+      {uploadProgress && (
+        <div className="text-sm text-blue-600 font-medium animate-pulse">
+          {uploadProgress}
+        </div>
+      )}
 
       <input
         ref={fileInputRef}
         type="file"
-        accept="image/*"
+        accept="image/jpeg,image/jpg,image/png,image/webp"
         multiple
         onChange={handleFileSelect}
         className="hidden"
@@ -93,7 +148,7 @@ export default function ImageUpload({
           <ImageIcon className="w-12 h-12 text-gray-400 mx-auto mb-4" />
           <p className="text-gray-600 mb-2">Click to upload images</p>
           <p className="text-sm text-gray-400">or drag and drop files here</p>
-          <p className="text-xs text-gray-400 mt-2">JPEG, PNG, GIF, WebP • Max 5MB each</p>
+          <p className="text-xs text-gray-400 mt-2">JPEG, PNG, WebP • Max 10MB each</p>
         </div>
       ) : (
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">

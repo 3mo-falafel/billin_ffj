@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
+import Image from "next/image"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { CalendarIcon, TagIcon } from "lucide-react"
@@ -137,11 +138,14 @@ export function NewsList() {
                   onClick={() => router.push(`/news/${item.id}`)}
                 >
                   {item.image_url && (
-                    <div className="aspect-video bg-gray-200 rounded-t-lg overflow-hidden">
-                      <img 
+                    <div className="aspect-video bg-gray-200 rounded-t-lg overflow-hidden relative">
+                      <Image 
                         src={item.image_url} 
                         alt={language === 'ar' ? item.title_ar : item.title_en}
-                        className="w-full h-full object-cover"
+                        fill
+                        className="object-cover"
+                        sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                        loading="lazy"
                       />
                     </div>
                   )}
@@ -194,11 +198,14 @@ export function NewsList() {
                   onClick={() => router.push(`/news/${item.id}`)}
                 >
                   {item.image_url && (
-                    <div className="aspect-video bg-gray-200 rounded-t-lg overflow-hidden">
-                      <img 
+                    <div className="aspect-video bg-gray-200 rounded-t-lg overflow-hidden relative">
+                      <Image 
                         src={item.image_url} 
                         alt={language === 'ar' ? item.title_ar : item.title_en}
-                        className="w-full h-full object-cover"
+                        fill
+                        className="object-cover"
+                        sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                        loading="lazy"
                       />
                     </div>
                   )}

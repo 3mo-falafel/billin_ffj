@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
+import Image from "next/image"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -115,11 +116,14 @@ export function ActivityDetail({ activityId }: ActivityDetailProps) {
           <Card>
             {/* Hero Image */}
             {activity.image_url && (
-              <div className="aspect-video bg-gray-200 rounded-t-lg overflow-hidden">
-                <img 
+              <div className="aspect-video bg-gray-200 rounded-t-lg overflow-hidden relative">
+                <Image 
                   src={activity.image_url} 
                   alt={title}
-                  className="w-full h-full object-cover"
+                  fill
+                  className="object-cover"
+                  sizes="(max-width: 768px) 100vw, 80vw"
+                  priority
                 />
               </div>
             )}
