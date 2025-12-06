@@ -941,13 +941,14 @@ export default function GalleryAdminWrapper() {
               
               <div className="space-y-2">
                 <Label>Current Images ({photoFormData.images.length})</Label>
-                <div className="grid grid-cols-3 gap-2 max-h-60 overflow-y-auto border rounded-lg p-2">
+                <div className="grid grid-cols-4 gap-2 max-h-60 overflow-y-auto border rounded-lg p-2 bg-gray-50">
                   {photoFormData.images.map((img, idx) => (
-                    <div key={idx} className="relative group">
+                    <div key={idx} className="relative group aspect-square">
                       <img 
-                        src={img.substring(0, 100) + '...'} 
+                        src={img}
                         alt={`Image ${idx + 1}`}
-                        className="w-full h-24 object-cover rounded"
+                        className="w-full h-full object-cover rounded"
+                        loading="lazy"
                         onError={(e) => {
                           const target = e.target as HTMLImageElement;
                           target.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="100" height="100"%3E%3Crect fill="%23e5e7eb" width="100" height="100"/%3E%3Ctext fill="%236b7280" font-size="12" x="50%25" y="50%25" text-anchor="middle"%3EImg ' + (idx + 1) + '%3C/text%3E%3C/svg%3E';
