@@ -354,14 +354,20 @@ export function PhotoGallery() {
               
               {/* Main Image Viewer - Takes up 80% of viewport */}
               {selectedAlbum.images.length > 0 && (
-                <div className="relative flex-1 overflow-hidden bg-gray-100 rounded-lg shadow-2xl mb-4">
+                <div className="relative flex-1 overflow-hidden bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg shadow-2xl mb-4">
                   <img
+                    key={currentImageIndex}
                     src={selectedAlbum.images[currentImageIndex]}
-                    alt={`${selectedAlbum.title} - ${currentImageIndex + 1}`}
+                    alt={`${selectedAlbum.title} - Image ${currentImageIndex + 1} of ${selectedAlbum.images.length}`}
                     className="w-full h-full object-contain"
+                    style={{ imageRendering: 'auto' }}
+                    onLoad={(e) => {
+                      const target = e.target as HTMLImageElement;
+                      console.log('🔍 Main image loaded:', currentImageIndex, 'Size:', target.naturalWidth, 'x', target.naturalHeight)
+                    }}
                     onError={(e) => {
                       const target = e.target as HTMLImageElement;
-                      console.error('Image load error:', selectedAlbum.images[currentImageIndex]);
+                      console.error('🔍 Main image load error:', selectedAlbum.images[currentImageIndex].substring(0, 100));
                       target.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="800" height="600"%3E%3Crect fill="%23f3f4f6" width="800" height="600"/%3E%3Ctext fill="%236b7280" font-family="sans-serif" font-size="24" x="50%25" y="50%25" text-anchor="middle" dominant-baseline="middle"%3EImage Unavailable%3C/text%3E%3C/svg%3E';
                     }}
                   />
@@ -395,34 +401,47 @@ export function PhotoGallery() {
               
               {/* Thumbnail Strip - Fixed height, scrollable */}
               {selectedAlbum.images.length > 1 && (
-                <div className="bg-white rounded-lg shadow-lg p-3 overflow-x-auto">
-                  <div className="flex gap-2 min-w-max">
+                <div className="bg-white rounded-lg shadow-lg p-3 overflow-x-auto overflow-y-hidden">
+                  <div className="flex gap-3 min-w-max">
                     {selectedAlbum.images.map((image, index) => (
-                      <div 
-                        key={index} 
-                        className="relative group flex-shrink-0"
+                      <button
+                        key={index}
+                        type="button"
+                        className={`relative flex-shrink-0 w-16 h-16 md:w-24 md:h-24 rounded-lg overflow-hidden cursor-pointer transition-all duration-200 focus:outline-none ${
+                          index === currentImageIndex 
+                            ? 'ring-4 ring-blue-500 scale-105 shadow-xl' 
+                            : 'ring-2 ring-gray-300 hover:ring-blue-400 hover:scale-105 shadow-md'
+                        }`}
+                        onClick={() => {
+                          console.log('🔍 Thumbnail clicked:', index, 'Image URL:', image.substring(0, 100))
+                          setCurrentImageIndex(index)
+                        }}
+                        aria-label={`View image ${index + 1} of ${selectedAlbum.images.length}`}
                       >
-                        <div
-                          className={`w-16 h-16 md:w-20 md:h-20 rounded-md overflow-hidden cursor-pointer transition-all duration-200 ${
-                            index === currentImageIndex 
-                              ? 'ring-4 ring-blue-500 scale-105 shadow-xl' 
-                              : 'ring-2 ring-gray-200 hover:ring-gray-400 hover:scale-105 shadow-md'
-                          }`}
-                          onClick={() => setCurrentImageIndex(index)}
-                        >
-                          <img
-                            src={image}
-                            alt={`Thumbnail ${index + 1}`}
-                            className="w-full h-full object-cover"
-                            loading="lazy"
-                            onError={(e) => {
-                              const target = e.target as HTMLImageElement;
-                              target.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="80" height="80"%3E%3Crect fill="%23e5e7eb" width="80" height="80"/%3E%3Ctext fill="%239ca3af" font-family="sans-serif" font-size="10" x="50%25" y="50%25" text-anchor="middle" dominant-baseline="middle"%3E' + (index + 1) + '%3C/text%3E%3C/svg%3E';
-                            }}
-                          />
-                        </div>
-                        {/* Optional: Download button on hover for each thumbnail */}
-                        <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-40 transition-all duration-200 rounded-md flex items-center justify-center">
+                        {/* Thumbnail Image */}
+                        <img
+                          src={image}
+                          alt={`${selectedAlbum.title} - Image ${index + 1}`}
+                          className="absolute inset-0 w-full h-full object-cover"
+                          loading="eager"
+                          onLoad={(e) => {
+                            const target = e.target as HTMLImageElement;
+                            console.log('🔍 Thumbnail loaded successfully:', index, 'Size:', target.naturalWidth, 'x', target.naturalHeight)
+                          }}
+                          onError={(e) => {
+                            const target = e.target as HTMLImageElement;
+                            console.error('🔍 Thumbnail failed to load:', index, 'URL:', image.substring(0, 100))
+                            target.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="100" height="100"%3E%3Crect fill="%23e5e7eb" width="100" height="100"/%3E%3Ctext fill="%236b7280" font-family="sans-serif" font-size="14" font-weight="bold" x="50%25" y="50%25" text-anchor="middle" dominant-baseline="middle"%3E' + (index + 1) + '%3C/text%3E%3C/svg%3E';
+                          }}
+                        />
+                        
+                        {/* Active indicator overlay */}
+                        {index === currentImageIndex && (
+                          <div className="absolute inset-0 bg-blue-500/20 pointer-events-none"></div>
+                        )}
+                        
+                        {/* Hover overlay with download button */}
+                        <div className="absolute inset-0 bg-black/0 hover:bg-black/50 transition-all duration-200 flex items-center justify-center group">
                           <Button
                             size="sm"
                             variant="secondary"
@@ -430,12 +449,12 @@ export function PhotoGallery() {
                               e.stopPropagation()
                               downloadImage(image, `${selectedAlbum.title}-${index + 1}.jpg`)
                             }}
-                            className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 h-6 w-6 p-0 bg-white/90 hover:bg-white"
+                            className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 h-7 w-7 p-0 bg-white/95 hover:bg-white shadow-lg"
                           >
-                            <Download className="w-3 h-3" />
+                            <Download className="w-3.5 h-3.5" />
                           </Button>
                         </div>
-                      </div>
+                      </button>
                     ))}
                   </div>
                 </div>
