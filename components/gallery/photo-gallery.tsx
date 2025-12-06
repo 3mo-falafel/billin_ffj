@@ -133,6 +133,27 @@ export function PhotoGallery() {
     setCurrentPage(1)
   }, [selectedCategory])
 
+  // Keyboard navigation for gallery viewer
+  useEffect(() => {
+    if (!selectedAlbum) return
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'ArrowLeft') {
+        e.preventDefault()
+        prevImage()
+      } else if (e.key === 'ArrowRight') {
+        e.preventDefault()
+        nextImage()
+      } else if (e.key === 'Escape') {
+        e.preventDefault()
+        setSelectedAlbum(null)
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [selectedAlbum, currentImageIndex])
+
   const nextImage = () => {
     if (selectedAlbum && selectedAlbum.images.length > 0) {
       setCurrentImageIndex((prev) => (prev + 1) % selectedAlbum.images.length)
@@ -290,64 +311,81 @@ export function PhotoGallery() {
           </div>
         )}
 
-        {/* Album Modal */}
+        {/* Album Modal - Enhanced Lightbox Viewer */}
         {selectedAlbum && (
-          <div className="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-50 p-4"
-               onClick={() => setSelectedAlbum(null)}>
-            <div className="bg-white rounded-xl max-w-6xl max-h-[90vh] overflow-y-auto relative"
-                 onClick={(e) => e.stopPropagation()}>
-              <div className="absolute top-4 right-4 z-10 flex space-x-2">
-                <Button
-                  onClick={() => downloadImage(selectedAlbum.images[currentImageIndex], `${selectedAlbum.title}-${currentImageIndex + 1}.jpg`)}
-                  variant="outline"
-                  size="sm"
-                  className="bg-white bg-opacity-90 hover:bg-opacity-100"
-                >
-                  <Download className="w-4 h-4 mr-1" />
-                  {language === 'en' ? 'Download' : 'تحميل'}
-                </Button>
-                <Button
-                  onClick={() => setSelectedAlbum(null)}
-                  variant="outline"
-                  size="sm"
-                  className="bg-white bg-opacity-90 hover:bg-opacity-100"
-                >
-                  <X className="w-4 h-4" />
-                </Button>
+          <div 
+            className="fixed inset-0 bg-white/95 backdrop-blur-sm flex items-center justify-center z-50 p-4 md:p-8"
+            onClick={() => setSelectedAlbum(null)}
+          >
+            <div 
+              className="w-full h-full max-w-[95vw] max-h-[95vh] flex flex-col"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Header Controls */}
+              <div className="flex items-center justify-between mb-4 px-2">
+                <div className="flex-1">
+                  <h2 className={`text-lg md:text-xl font-bold text-gray-900 ${isArabic ? "arabic-text" : "english-text"}`}>
+                    {selectedAlbum.title}
+                  </h2>
+                  <p className={`text-sm text-gray-600 ${isArabic ? "arabic-text" : "english-text"}`}>
+                    📍 {selectedAlbum.location}
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button
+                    onClick={() => downloadImage(selectedAlbum.images[currentImageIndex], `${selectedAlbum.title}-${currentImageIndex + 1}.jpg`)}
+                    variant="outline"
+                    size="sm"
+                    className="bg-white shadow-md hover:shadow-lg"
+                  >
+                    <Download className="w-4 h-4 md:mr-2" />
+                    <span className="hidden md:inline">{language === 'en' ? 'Download' : 'تحميل'}</span>
+                  </Button>
+                  <Button
+                    onClick={() => setSelectedAlbum(null)}
+                    variant="outline"
+                    size="sm"
+                    className="bg-white shadow-md hover:shadow-lg"
+                  >
+                    <X className="w-4 h-4" />
+                  </Button>
+                </div>
               </div>
               
-              {/* Image Gallery */}
+              {/* Main Image Viewer - Takes up 80% of viewport */}
               {selectedAlbum.images.length > 0 && (
-                <div className="relative h-96 overflow-hidden bg-gray-900">
+                <div className="relative flex-1 overflow-hidden bg-gray-100 rounded-lg shadow-2xl mb-4">
                   <img
                     src={selectedAlbum.images[currentImageIndex]}
-                    alt={selectedAlbum.title}
+                    alt={`${selectedAlbum.title} - ${currentImageIndex + 1}`}
                     className="w-full h-full object-contain"
                     onError={(e) => {
                       const target = e.target as HTMLImageElement;
                       console.error('Image load error:', selectedAlbum.images[currentImageIndex]);
-                      target.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="800" height="600"%3E%3Crect fill="%23374151" width="800" height="600"/%3E%3Ctext fill="%23ffffff" font-family="sans-serif" font-size="24" x="50%25" y="50%25" text-anchor="middle" dominant-baseline="middle"%3EImage Unavailable%3C/text%3E%3C/svg%3E';
+                      target.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="800" height="600"%3E%3Crect fill="%23f3f4f6" width="800" height="600"/%3E%3Ctext fill="%236b7280" font-family="sans-serif" font-size="24" x="50%25" y="50%25" text-anchor="middle" dominant-baseline="middle"%3EImage Unavailable%3C/text%3E%3C/svg%3E';
                     }}
                   />
+                  
+                  {/* Navigation Buttons */}
                   {selectedAlbum.images.length > 1 && (
                     <>
                       <Button
                         onClick={prevImage}
-                        className="absolute left-4 top-1/2 transform -translate-y-1/2"
+                        className="absolute left-2 md:left-4 top-1/2 transform -translate-y-1/2 bg-white/90 hover:bg-white shadow-lg"
                         variant="outline"
                         size="sm"
                       >
-                        <ChevronLeft className="w-4 h-4" />
+                        <ChevronLeft className="w-5 h-5" />
                       </Button>
                       <Button
                         onClick={nextImage}
-                        className="absolute right-4 top-1/2 transform -translate-y-1/2"
+                        className="absolute right-2 md:right-4 top-1/2 transform -translate-y-1/2 bg-white/90 hover:bg-white shadow-lg"
                         variant="outline"
                         size="sm"
                       >
-                        <ChevronRight className="w-4 h-4" />
+                        <ChevronRight className="w-5 h-5" />
                       </Button>
-                      <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 bg-black bg-opacity-50 text-white px-3 py-1 rounded-full text-sm">
+                      <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 bg-gray-900/80 text-white px-4 py-2 rounded-full text-sm font-medium shadow-lg">
                         {currentImageIndex + 1} / {selectedAlbum.images.length}
                       </div>
                     </>
@@ -355,34 +393,36 @@ export function PhotoGallery() {
                 </div>
               )}
               
-              <div className="p-6 space-y-4">
-                <div>
-                  <h2 className="text-2xl font-bold text-gray-900 mb-2">
-                    {selectedAlbum.title}
-                  </h2>
-                  <p className="text-gray-600">
-                    📍 {selectedAlbum.location}
-                  </p>
-                </div>
-
-                {/* Thumbnail Grid */}
-                {selectedAlbum.images.length > 1 && (
-                  <div className="grid grid-cols-6 gap-2">
+              {/* Thumbnail Strip - Fixed height, scrollable */}
+              {selectedAlbum.images.length > 1 && (
+                <div className="bg-white rounded-lg shadow-lg p-3 overflow-x-auto">
+                  <div className="flex gap-2 min-w-max">
                     {selectedAlbum.images.map((image, index) => (
-                      <div key={index} className="relative group">
-                        <img
-                          src={image}
-                          alt={`${selectedAlbum.title} ${index + 1}`}
-                          className={`w-full h-16 object-cover rounded cursor-pointer border-2 ${
-                            index === currentImageIndex ? 'border-blue-500' : 'border-gray-200'
+                      <div 
+                        key={index} 
+                        className="relative group flex-shrink-0"
+                      >
+                        <div
+                          className={`w-16 h-16 md:w-20 md:h-20 rounded-md overflow-hidden cursor-pointer transition-all duration-200 ${
+                            index === currentImageIndex 
+                              ? 'ring-4 ring-blue-500 scale-105 shadow-xl' 
+                              : 'ring-2 ring-gray-200 hover:ring-gray-400 hover:scale-105 shadow-md'
                           }`}
                           onClick={() => setCurrentImageIndex(index)}
-                          onError={(e) => {
-                            const target = e.target as HTMLImageElement;
-                            target.src = '/placeholder.jpg';
-                          }}
-                        />
-                        <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-50 transition-all duration-200 rounded flex items-center justify-center">
+                        >
+                          <img
+                            src={image}
+                            alt={`Thumbnail ${index + 1}`}
+                            className="w-full h-full object-cover"
+                            loading="lazy"
+                            onError={(e) => {
+                              const target = e.target as HTMLImageElement;
+                              target.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="80" height="80"%3E%3Crect fill="%23e5e7eb" width="80" height="80"/%3E%3Ctext fill="%239ca3af" font-family="sans-serif" font-size="10" x="50%25" y="50%25" text-anchor="middle" dominant-baseline="middle"%3E' + (index + 1) + '%3C/text%3E%3C/svg%3E';
+                            }}
+                          />
+                        </div>
+                        {/* Optional: Download button on hover for each thumbnail */}
+                        <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-40 transition-all duration-200 rounded-md flex items-center justify-center">
                           <Button
                             size="sm"
                             variant="secondary"
@@ -390,7 +430,7 @@ export function PhotoGallery() {
                               e.stopPropagation()
                               downloadImage(image, `${selectedAlbum.title}-${index + 1}.jpg`)
                             }}
-                            className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 h-6 w-6 p-0"
+                            className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 h-6 w-6 p-0 bg-white/90 hover:bg-white"
                           >
                             <Download className="w-3 h-3" />
                           </Button>
@@ -398,8 +438,8 @@ export function PhotoGallery() {
                       </div>
                     ))}
                   </div>
-                )}
-              </div>
+                </div>
+              )}
             </div>
           </div>
         )}
