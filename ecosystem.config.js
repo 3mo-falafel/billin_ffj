@@ -11,7 +11,7 @@ module.exports = {
     max_memory_restart: '1G',
     env: {
       NODE_ENV: 'production',
-      PORT: 3000,
+      PORT: 3001,
       // Disable Next.js interactive features for PM2
       CI: 'true',
       // Add your database credentials
