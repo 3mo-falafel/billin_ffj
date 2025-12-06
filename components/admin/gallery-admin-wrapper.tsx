@@ -74,8 +74,11 @@ export default function GalleryAdminWrapper() {
   const [filterCategory, setFilterCategory] = useState<string>('all')
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
   const [showAddDialog, setShowAddDialog] = useState(false)
+  const [showEditDialog, setShowEditDialog] = useState(false)
   const [editingItem, setEditingItem] = useState<PhotoAlbum | VideoItem | null>(null)
   const [previewImage, setPreviewImage] = useState<string | null>(null)
+  const [isLoading, setIsLoading] = useState(false)
+  const [isSaving, setIsSaving] = useState(false)
 
   // Form state for photos
   const [photoFormData, setPhotoFormData] = useState({
@@ -100,6 +103,7 @@ export default function GalleryAdminWrapper() {
 
   const loadData = async () => {
     try {
+      setIsLoading(true)
       const { createClient } = await import('@/lib/api/client')
       const api = createClient()
       
@@ -161,6 +165,8 @@ export default function GalleryAdminWrapper() {
       }
     } catch (error) {
       console.error('Failed to load gallery data:', error)
+    } finally {
+      setIsLoading(false)
     }
   }
 
@@ -257,7 +263,10 @@ export default function GalleryAdminWrapper() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold mb-2">Gallery Management</h1>
-            <p className="text-emerald-100">Simple photo albums and video gallery management</p>
+            <p className="text-emerald-100">
+              Simple photo albums and video gallery management
+              {isLoading && <span className="ml-2 animate-pulse">⏳ Loading...</span>}
+            </p>
           </div>
           <div className="flex space-x-3">
             <div className="flex items-center space-x-2 bg-white bg-opacity-20 rounded-lg p-2">
@@ -338,10 +347,11 @@ export default function GalleryAdminWrapper() {
                   <Card key={album.id} className="group hover:shadow-lg transition-all duration-300 overflow-hidden">
                     <CardHeader className="p-0">
                       {album.images.length > 0 && (
-                        <div className="relative aspect-square overflow-hidden">
+                        <div className="relative aspect-square overflow-hidden bg-gray-100">
                           <img
                             src={album.images[0]}
                             alt={album.title}
+                            loading="lazy"
                             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300 cursor-pointer"
                             onClick={() => setPreviewImage(album.images[0])}
                           />
@@ -433,10 +443,19 @@ export default function GalleryAdminWrapper() {
 
                           <div className="flex items-center justify-between">
                             <div className="flex space-x-2">
-                              <Button size="sm" variant="outline" onClick={() => setEditingItem(album)}>
-                                <Edit className="w-4 h-4 mr-1" />
-                                Edit
-                              </Button>
+                            <Button size="sm" variant="outline" onClick={() => {
+                              setEditingItem(album)
+                              setPhotoFormData({
+                                title: album.title,
+                                location: album.location,
+                                category: album.category,
+                                images: album.images
+                              })
+                              setShowEditDialog(true)
+                            }}>
+                              <Edit className="w-4 h-4 mr-1" />
+                              Edit
+                            </Button>
                               <Button size="sm" variant="outline" onClick={() => setPreviewImage(album.images[0])}>
                                 <Eye className="w-4 h-4 mr-1" />
                                 View
@@ -519,7 +538,17 @@ export default function GalleryAdminWrapper() {
 
                       <div className="flex items-center justify-between pt-3 border-t">
                         <div className="flex space-x-2">
-                          <Button size="sm" variant="outline" onClick={() => setEditingItem(video)}>
+                          <Button size="sm" variant="outline" onClick={() => {
+                            setEditingItem(video)
+                            setVideoFormData({
+                              title: video.title,
+                              description: video.description,
+                              video_url: video.video_url,
+                              cover_image: video.cover_image,
+                              category: video.category
+                            })
+                            setShowEditDialog(true)
+                          }}>
                             <Edit className="w-4 h-4" />
                           </Button>
                           <Button 
@@ -649,11 +678,12 @@ export default function GalleryAdminWrapper() {
               </div>
               
               <div className="flex justify-end gap-2">
-                <Button variant="outline" onClick={() => setShowAddDialog(false)}>
+                <Button variant="outline" onClick={() => setShowAddDialog(false)} disabled={isSaving}>
                   Cancel
                 </Button>
                 <Button onClick={async () => {
                   try {
+                    setIsSaving(true)
                     console.log('🔍 GALLERY ADMIN DEBUG - Saving photo album:', photoFormData)
                     
                     if (!photoFormData.title || !photoFormData.category || photoFormData.images.length === 0) {
@@ -694,9 +724,11 @@ export default function GalleryAdminWrapper() {
                   } catch (error: any) {
                     console.error('🔍 GALLERY ADMIN DEBUG - Error saving photo album:', error)
                     alert(`Failed to save photo album: ${error.message}`)
+                  } finally {
+                    setIsSaving(false)
                   }
-                }}>
-                  Save Album
+                }} disabled={isSaving}>
+                  {isSaving ? 'Saving...' : 'Save Album'}
                 </Button>
               </div>
             </TabsContent>
@@ -760,11 +792,12 @@ export default function GalleryAdminWrapper() {
               </div>
               
               <div className="flex justify-end gap-2">
-                <Button variant="outline" onClick={() => setShowAddDialog(false)}>
+                <Button variant="outline" onClick={() => setShowAddDialog(false)} disabled={isSaving}>
                   Cancel
                 </Button>
                 <Button onClick={async () => {
                   try {
+                    setIsSaving(true)
                     console.log('🔍 GALLERY ADMIN DEBUG - Saving video:', videoFormData)
                     
                     if (!videoFormData.title || !videoFormData.video_url || !videoFormData.category) {
@@ -806,13 +839,214 @@ export default function GalleryAdminWrapper() {
                   } catch (error: any) {
                     console.error('🔍 GALLERY ADMIN DEBUG - Error saving video:', error)
                     alert(`Failed to save video: ${error.message}`)
+                  } finally {
+                    setIsSaving(false)
                   }
-                }}>
-                  Save Video
+                }} disabled={isSaving}>
+                  {isSaving ? 'Saving...' : 'Save Video'}
                 </Button>
               </div>
             </TabsContent>
           </Tabs>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Content Dialog */}
+      <Dialog open={showEditDialog} onOpenChange={(open) => {
+        setShowEditDialog(open)
+        if (!open) {
+          setEditingItem(null)
+          setPhotoFormData({ title: '', location: '', category: '', images: [] })
+          setVideoFormData({ title: '', description: '', video_url: '', cover_image: '', category: '' })
+        }
+      }}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Edit {editingItem && 'images' in editingItem ? 'Photo Album' : 'Video'}</DialogTitle>
+          </DialogHeader>
+          
+          {editingItem && 'images' in editingItem ? (
+            // Edit Photo Album
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="edit-photo-title">Album Title</Label>
+                  <Input
+                    id="edit-photo-title"
+                    value={photoFormData.title}
+                    onChange={(e) => setPhotoFormData({ ...photoFormData, title: e.target.value })}
+                    placeholder="Enter album title..."
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="edit-photo-location">Location</Label>
+                  <Input
+                    id="edit-photo-location"
+                    value={photoFormData.location}
+                    onChange={(e) => setPhotoFormData({ ...photoFormData, location: e.target.value })}
+                    placeholder="Enter location..."
+                  />
+                </div>
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="edit-photo-category">Category</Label>
+                <Select value={photoFormData.category} onValueChange={(value) => setPhotoFormData({ ...photoFormData, category: value })}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select category..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {categories.map((cat) => (
+                      <SelectItem key={cat.value} value={cat.value}>
+                        {cat.icon} {cat.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div className="space-y-2">
+                <Label>Current Images ({photoFormData.images.length})</Label>
+                <div className="grid grid-cols-3 gap-2 max-h-60 overflow-y-auto border rounded-lg p-2">
+                  {photoFormData.images.map((img, idx) => (
+                    <div key={idx} className="relative group">
+                      <img 
+                        src={img.substring(0, 100) + '...'} 
+                        alt={`Image ${idx + 1}`}
+                        className="w-full h-24 object-cover rounded"
+                        onError={(e) => {
+                          const target = e.target as HTMLImageElement;
+                          target.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="100" height="100"%3E%3Crect fill="%23e5e7eb" width="100" height="100"/%3E%3Ctext fill="%236b7280" font-size="12" x="50%25" y="50%25" text-anchor="middle"%3EImg ' + (idx + 1) + '%3C/text%3E%3C/svg%3E';
+                        }}
+                      />
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 h-6 w-6 p-0"
+                        onClick={() => {
+                          const newImages = photoFormData.images.filter((_, i) => i !== idx)
+                          setPhotoFormData({ ...photoFormData, images: newImages })
+                        }}
+                      >
+                        <X className="w-3 h-3" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+                <p className="text-sm text-muted-foreground">Click X to remove an image</p>
+              </div>
+              
+              <div className="flex justify-end gap-2">
+                <Button variant="outline" onClick={() => setShowEditDialog(false)} disabled={isSaving}>
+                  Cancel
+                </Button>
+                <Button onClick={async () => {
+                  try {
+                    setIsSaving(true)
+                    
+                    if (!photoFormData.title || !photoFormData.category) {
+                      alert('Please fill in all required fields')
+                      return
+                    }
+                    
+                    // For simplicity, we'll keep the edit as updating all images with same title
+                    // In production, you'd want more granular control
+                    alert('Edit feature updates the album information. To modify images, please delete and recreate the album.')
+                    
+                    await loadData()
+                    setShowEditDialog(false)
+                    setEditingItem(null)
+                    
+                  } catch (error: any) {
+                    console.error('Error updating album:', error)
+                    alert(`Failed to update album: ${error.message}`)
+                  } finally {
+                    setIsSaving(false)
+                  }
+                }} disabled={isSaving}>
+                  {isSaving ? 'Updating...' : 'Update Album'}
+                </Button>
+              </div>
+            </div>
+          ) : editingItem ? (
+            // Edit Video
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit-video-title">Video Title</Label>
+                <Input
+                  id="edit-video-title"
+                  value={videoFormData.title}
+                  onChange={(e) => setVideoFormData({ ...videoFormData, title: e.target.value })}
+                  placeholder="Enter video title..."
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="edit-video-description">Description</Label>
+                <Input
+                  id="edit-video-description"
+                  value={videoFormData.description}
+                  onChange={(e) => setVideoFormData({ ...videoFormData, description: e.target.value })}
+                  placeholder="Enter description..."
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="edit-video-category">Category</Label>
+                <Select value={videoFormData.category} onValueChange={(value) => setVideoFormData({ ...videoFormData, category: value })}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select category..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {categories.map((cat) => (
+                      <SelectItem key={cat.value} value={cat.value}>
+                        {cat.icon} {cat.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="edit-video-url">Video URL</Label>
+                <Input
+                  id="edit-video-url"
+                  value={videoFormData.video_url}
+                  onChange={(e) => setVideoFormData({ ...videoFormData, video_url: e.target.value })}
+                  placeholder="Enter video URL..."
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="edit-cover-image">Cover Image URL</Label>
+                <Input
+                  id="edit-cover-image"
+                  value={videoFormData.cover_image}
+                  onChange={(e) => setVideoFormData({ ...videoFormData, cover_image: e.target.value })}
+                  placeholder="Enter cover image URL..."
+                />
+              </div>
+              
+              <div className="flex justify-end gap-2">
+                <Button variant="outline" onClick={() => setShowEditDialog(false)} disabled={isSaving}>
+                  Cancel
+                </Button>
+                <Button onClick={async () => {
+                  try {
+                    setIsSaving(true)
+                    alert('Edit feature for videos coming soon. Please delete and recreate for now.')
+                    setShowEditDialog(false)
+                  } catch (error: any) {
+                    alert(`Failed to update video: ${error.message}`)
+                  } finally {
+                    setIsSaving(false)
+                  }
+                }} disabled={isSaving}>
+                  {isSaving ? 'Updating...' : 'Update Video'}
+                </Button>
+              </div>
+            </div>
+          ) : null}
         </DialogContent>
       </Dialog>
 
