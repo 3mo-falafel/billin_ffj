@@ -3,13 +3,18 @@
 import 'server-only';
 import { Pool, PoolConfig, QueryResult, QueryResultRow } from 'pg'
 
+// Get password - must be a non-empty string or undefined
+const dbPassword = process.env.DATABASE_PASSWORD && process.env.DATABASE_PASSWORD.trim() !== '' 
+  ? process.env.DATABASE_PASSWORD 
+  : undefined
+
 // PostgreSQL connection configuration
 const poolConfig: PoolConfig = {
   host: process.env.DATABASE_HOST || 'localhost',
   port: parseInt(process.env.DATABASE_PORT || '5432'),
   database: process.env.DATABASE_NAME || 'bilin_website',
   user: process.env.DATABASE_USER || 'postgres',
-  password: process.env.DATABASE_PASSWORD || '',
+  password: dbPassword,
   max: 20, // Maximum number of clients in the pool
   idleTimeoutMillis: 30000, // Close idle clients after 30 seconds
   connectionTimeoutMillis: 20000, // Return an error after 20 seconds if connection could not be established
@@ -23,7 +28,8 @@ console.log('Database configuration:', {
   database: poolConfig.database,
   user: poolConfig.user,
   ssl: poolConfig.ssl,
-  hasPassword: !!poolConfig.password
+  hasPassword: !!poolConfig.password,
+  passwordLength: poolConfig.password ? String(poolConfig.password).length : 0
 })
 
 // Create a single pool instance to be shared across the application
