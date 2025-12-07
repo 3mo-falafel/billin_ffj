@@ -2,6 +2,14 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/db/client'
 import { getCurrentUser } from '@/lib/auth/session'
 
+interface GalleryItem {
+  id: string
+  title_en: string
+  media_url: string
+  category: string
+  created_at: string
+}
+
 // GET - Fetch gallery items
 export async function GET(request: NextRequest) {
   try {
@@ -13,12 +21,15 @@ export async function GET(request: NextRequest) {
     const media_type = searchParams.get('media_type')
     const active = searchParams.get('active')
     const metadataOnly = searchParams.get('metadata_only') === 'true'
+    const withThumbnails = searchParams.get('with_thumbnails') === 'true'
     
+    // For with_thumbnails mode: fetch all items but we'll process to get first image per album
     // For metadata_only requests, we select only essential fields (no media_url)
     // This dramatically improves performance for listing pages
-    const selectFields = metadataOnly 
-      ? 'id, title_en, title_ar, description_en, description_ar, media_type, cover_image, category, is_active, created_at'
-      : '*'
+    let selectFields = '*'
+    if (metadataOnly && !withThumbnails) {
+      selectFields = 'id, title_en, title_ar, description_en, description_ar, media_type, cover_image, category, is_active, created_at'
+    }
     
     let query = db.from('gallery').select(selectFields)
     
@@ -34,9 +45,9 @@ export async function GET(request: NextRequest) {
       query = query.eq('is_active', true)
     }
     
-    query = query.order('created_at', { ascending: false })
+    query = query.order('created_at', { ascending: true }) // Oldest first so first uploaded is the thumbnail
     
-    if (limit) {
+    if (limit && !withThumbnails) {
       query = query.limit(parseInt(limit))
     }
     
@@ -44,6 +55,39 @@ export async function GET(request: NextRequest) {
     
     if (result.error) {
       return NextResponse.json({ error: result.error.message }, { status: 500 })
+    }
+    
+    // If with_thumbnails mode, group by album and return first image as thumbnail
+    if (withThumbnails && result.data) {
+      const albumMap = new Map<string, { 
+        id: string
+        title_en: string
+        thumbnail: string
+        category: string
+        created_at: string
+        imageCount: number
+      }>()
+      
+      result.data.forEach((item: GalleryItem) => {
+        const key = item.title_en || 'Untitled Album'
+        if (!albumMap.has(key)) {
+          albumMap.set(key, {
+            id: item.id,
+            title_en: item.title_en,
+            thumbnail: item.media_url, // First image becomes thumbnail
+            category: item.category,
+            created_at: item.created_at,
+            imageCount: 1
+          })
+        } else {
+          albumMap.get(key)!.imageCount++
+        }
+      })
+      
+      return NextResponse.json({ 
+        data: Array.from(albumMap.values()),
+        mode: 'albums_with_thumbnails'
+      })
     }
     
     return NextResponse.json({ data: result.data })

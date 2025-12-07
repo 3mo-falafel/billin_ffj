@@ -42,6 +42,7 @@ interface PhotoAlbum {
   title_en: string
   location: string
   images: string[]
+  thumbnail?: string  // First image as thumbnail
   category: string
   created_at: string
 }
@@ -109,36 +110,27 @@ export default function GalleryAdminWrapper() {
       const { createClient } = await import('@/lib/api/client')
       const api = createClient()
       
-      // Load photo albums (metadata only for fast loading)
-      const { data: photoData, error: photoError } = await api.gallery.getAll({ 
+      // Load photo albums with thumbnails (first image per album)
+      const { data: photoData, error: photoError, mode } = await api.gallery.getAll({ 
         media_type: 'image',
-        metadata_only: true  // Only fetch metadata, not full base64 images
-      })
+        with_thumbnails: true  // Get albums with first image as thumbnail
+      }) as { data: any; error: any; mode?: string }
       
       if (photoError) {
         console.error('Error loading photos:', photoError)
-      } else {
-        // Group photos by title to create albums (count only, no images)
-        const albumMap = new Map<string, PhotoAlbum>()
-        
-        photoData?.forEach(item => {
-          const key = item.title_en || 'Untitled Album'
-          if (!albumMap.has(key)) {
-            albumMap.set(key, {
-              id: item.id,
-              title: item.title_en || 'Untitled Album',
-              title_en: item.title_en || 'Untitled Album',
-              location: 'Bil\'in, Palestine',
-              images: [],
-              category: item.category || 'general',
-              created_at: item.created_at
-            })
-          }
-          // Count images but don't store URLs yet (we'll fetch on demand)
-          albumMap.get(key)!.images.push('placeholder')
-        })
-        
-        setPhotoAlbums(Array.from(albumMap.values()))
+      } else if (mode === 'albums_with_thumbnails' && photoData) {
+        // Data is already grouped into albums with thumbnails
+        const albums: PhotoAlbum[] = photoData.map((item: any) => ({
+          id: item.id,
+          title: item.title_en || 'Untitled Album',
+          title_en: item.title_en || 'Untitled Album',
+          location: 'Bil\'in, Palestine',
+          images: Array(item.imageCount).fill('placeholder'),
+          thumbnail: item.thumbnail,
+          category: item.category || 'general',
+          created_at: item.created_at
+        }))
+        setPhotoAlbums(albums)
       }
 
       // Load videos
@@ -438,10 +430,19 @@ export default function GalleryAdminWrapper() {
                   <Card key={album.id} className="group hover:shadow-lg transition-all duration-300 overflow-hidden">
                     <CardHeader className="p-0">
                       <div className="relative aspect-square overflow-hidden bg-gradient-to-br from-gray-100 to-gray-200">
-                        {/* Placeholder thumbnail - images load on demand */}
-                        <div className="w-full h-full flex items-center justify-center">
-                          <ImageIcon className="w-16 h-16 text-gray-400" />
-                        </div>
+                        {/* Show thumbnail if available, otherwise placeholder */}
+                        {album.thumbnail ? (
+                          <img
+                            src={album.thumbnail}
+                            alt={album.title}
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                            loading="lazy"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center">
+                            <ImageIcon className="w-16 h-16 text-gray-400" />
+                          </div>
+                        )}
                         <div className="absolute top-3 left-3">
                           <Badge className={`${categoryInfo.color} text-white`}>
                             {categoryInfo.icon} {categoryInfo.label}
@@ -498,8 +499,19 @@ export default function GalleryAdminWrapper() {
                   <Card key={album.id} className="hover:shadow-md transition-shadow">
                     <CardContent className="p-6">
                       <div className="flex gap-6">
-                        <div className="relative w-32 h-32 flex-shrink-0 bg-gradient-to-br from-gray-100 to-gray-200 rounded-lg flex items-center justify-center">
-                          <ImageIcon className="w-10 h-10 text-gray-400" />
+                        <div className="relative w-32 h-32 flex-shrink-0 bg-gradient-to-br from-gray-100 to-gray-200 rounded-lg overflow-hidden">
+                          {album.thumbnail ? (
+                            <img
+                              src={album.thumbnail}
+                              alt={album.title}
+                              className="w-full h-full object-cover"
+                              loading="lazy"
+                            />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center">
+                              <ImageIcon className="w-10 h-10 text-gray-400" />
+                            </div>
+                          )}
                           <Badge className="absolute top-2 left-2 text-xs bg-black bg-opacity-50 text-white">
                             {album.images.length}
                           </Badge>

@@ -13,6 +13,7 @@ interface PhotoAlbum {
   title: string
   location: string
   images: string[]
+  thumbnail?: string  // First image as thumbnail
   category: string
   created_at: string
 }
@@ -57,8 +58,8 @@ export function PhotoGallery() {
       setLoading(true)
       setError(null)
       try {
-        // Use metadata_only=true for fast loading (no image data)
-        const response = await fetch('/api/gallery?media_type=image&active=true&metadata_only=true')
+        // Use with_thumbnails=true to get albums with first image as thumbnail
+        const response = await fetch('/api/gallery?media_type=image&active=true&with_thumbnails=true')
         
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`)
@@ -67,30 +68,17 @@ export function PhotoGallery() {
         const result = await response.json()
         
         if (isMounted) {
-          if (result.data) {
-            const data = result.data
-            
-            // Group photos by title to create albums (count only, no images yet)
-            const albumMap = new Map<string, PhotoAlbum>()
-            
-            data.forEach((item: GalleryItem) => {
-              const key = item.title_en || 'Untitled Album'
-              if (!albumMap.has(key)) {
-                albumMap.set(key, {
-                  id: item.id,
-                  title: item.title_en || 'Untitled Album',
-                  location: 'Bil\'in, Palestine',
-                  images: [], // Will be loaded on demand
-                  category: item.category || 'general',
-                  created_at: item.created_at || ''
-                })
-              }
-              // Count images but don't store URLs yet (we'll fetch on click)
-              const album = albumMap.get(key)!
-              album.images.push('placeholder') // Just for counting
-            })
-            
-            const albums = Array.from(albumMap.values())
+          if (result.data && result.mode === 'albums_with_thumbnails') {
+            // Data is already grouped into albums with thumbnails
+            const albums: PhotoAlbum[] = result.data.map((item: any) => ({
+              id: item.id,
+              title: item.title_en || 'Untitled Album',
+              location: 'Bil\'in, Palestine',
+              images: Array(item.imageCount).fill('placeholder'), // Placeholder array for count
+              thumbnail: item.thumbnail, // First image as thumbnail
+              category: item.category || 'general',
+              created_at: item.created_at || ''
+            }))
             setPhotoAlbums(albums)
           } else if (result.error) {
             setError(result.error)
@@ -270,8 +258,25 @@ export function PhotoGallery() {
           {paginatedAlbums.map(album => (
             <Card key={album.id} className="border-border overflow-hidden group cursor-pointer" onClick={() => openAlbum(album)}>
               <div className="relative aspect-video overflow-hidden bg-gray-100">
-                {/* Show placeholder thumbnail since we only have metadata */}
-                <div className="w-full h-full bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center">
+                {/* Show thumbnail if available, otherwise placeholder */}
+                {album.thumbnail ? (
+                  <img
+                    src={album.thumbnail}
+                    alt={album.title}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    loading="lazy"
+                    onError={(e) => {
+                      const target = e.target as HTMLImageElement;
+                      target.style.display = 'none';
+                      target.parentElement?.querySelector('.placeholder-icon')?.classList.remove('hidden');
+                    }}
+                  />
+                ) : (
+                  <div className="w-full h-full bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center">
+                    <Camera className="w-16 h-16 text-gray-400" />
+                  </div>
+                )}
+                <div className="placeholder-icon hidden w-full h-full bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center absolute inset-0">
                   <Camera className="w-16 h-16 text-gray-400" />
                 </div>
                 <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-300 flex items-center justify-center">
