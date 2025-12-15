@@ -117,7 +117,14 @@ function GalleryAdminSimple() {
         // Group photos by title to create albums
         const albumMap = new Map<string, PhotoAlbum>()
         
-        photoData.forEach((item: any) => {
+        photoData.forEach((item: any, index: number) => {
+          console.log(`📸 Gallery Admin - Photo ${index}:`, {
+            id: item.id,
+            title_en: item.title_en,
+            media_url: item.media_url,
+            category: item.category
+          })
+          
           const key = item.title_en || 'Untitled Album'
           if (!albumMap.has(key)) {
             albumMap.set(key, {
@@ -130,7 +137,10 @@ function GalleryAdminSimple() {
             })
           }
           if (item.media_url) {
+            console.log(`📸 Gallery Admin - Adding image to album "${key}":`, item.media_url)
             albumMap.get(key)!.images.push(item.media_url)
+          } else {
+            console.warn(`📸 Gallery Admin - Photo ${index} has no media_url!`)
           }
         })
         
@@ -723,6 +733,7 @@ function GalleryAdminSimple() {
                             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300 cursor-pointer"
                             onClick={() => setPreviewImage(album.images[0])}
                             onError={(e) => {
+                              console.error(`📸 Image load error for album "${album.title}":`, album.images[0]);
                               const target = e.target as HTMLImageElement;
                               target.onerror = null;
                               target.src = '/placeholder.jpg';
