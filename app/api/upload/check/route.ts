@@ -1,57 +1,76 @@
 import { NextRequest, NextResponse } from 'next/server'
 import path from 'path'
 import fs from 'fs/promises'
+import { existsSync } from 'fs'
 
 export async function GET(request: NextRequest) {
   const diagnostics: Record<string, any> = {
     timestamp: new Date().toISOString(),
     cwd: process.cwd(),
     nodeEnv: process.env.NODE_ENV,
+    platform: process.platform,
+    nodeVersion: process.version,
   }
 
   const uploadDir = path.join(process.cwd(), 'public', 'uploads')
   const imagesDir = path.join(uploadDir, 'images')
+  const publicDir = path.join(process.cwd(), 'public')
 
+  diagnostics.publicDir = publicDir
   diagnostics.uploadDir = uploadDir
   diagnostics.imagesDir = imagesDir
 
-  // Check if directories exist
+  // Check if public directory exists
+  diagnostics.publicDirExists = existsSync(publicDir)
+  
+  // List contents of public directory
   try {
-    await fs.access(uploadDir)
-    diagnostics.uploadDirExists = true
-  } catch {
-    diagnostics.uploadDirExists = false
+    const publicContents = await fs.readdir(publicDir)
+    diagnostics.publicDirContents = publicContents.slice(0, 30)
+  } catch (error: any) {
+    diagnostics.publicDirContentsError = error.message
   }
 
-  try {
-    await fs.access(imagesDir)
-    diagnostics.imagesDirExists = true
-  } catch {
-    diagnostics.imagesDirExists = false
-  }
+  // Check if directories exist
+  diagnostics.uploadDirExists = existsSync(uploadDir)
+  diagnostics.imagesDirExists = existsSync(imagesDir)
 
   // Try to create directories if they don't exist
   if (!diagnostics.imagesDirExists) {
     try {
       await fs.mkdir(imagesDir, { recursive: true })
       diagnostics.imagesDirCreated = true
+      diagnostics.imagesDirExistsAfterCreate = existsSync(imagesDir)
     } catch (error: any) {
       diagnostics.imagesDirCreated = false
       diagnostics.imagesDirCreateError = error.message
+      diagnostics.imagesDirCreateErrorCode = error.code
     }
   }
 
   // Try to write a test file
-  const testFilePath = path.join(imagesDir, 'test-write.txt')
+  const testFilePath = path.join(imagesDir, 'test-write-' + Date.now() + '.txt')
   try {
-    await fs.writeFile(testFilePath, 'test')
+    await fs.writeFile(testFilePath, 'test content at ' + new Date().toISOString())
     diagnostics.canWriteToImagesDir = true
+    diagnostics.testFilePath = testFilePath
+    
+    // Verify the file exists
+    const testFileExists = existsSync(testFilePath)
+    diagnostics.testFileExistsAfterWrite = testFileExists
+    
+    if (testFileExists) {
+      const testFileContent = await fs.readFile(testFilePath, 'utf-8')
+      diagnostics.testFileContent = testFileContent
+    }
     
     // Clean up test file
     await fs.unlink(testFilePath)
+    diagnostics.testFileDeleted = true
   } catch (error: any) {
     diagnostics.canWriteToImagesDir = false
     diagnostics.writeError = error.message
+    diagnostics.writeErrorCode = error.code
   }
 
   // List files in images directory
@@ -64,5 +83,7 @@ export async function GET(request: NextRequest) {
     diagnostics.listFilesError = error.message
   }
 
-  return NextResponse.json(diagnostics)
+  return NextResponse.json(diagnostics, { 
+    headers: { 'Content-Type': 'application/json' }
+  })
 }
