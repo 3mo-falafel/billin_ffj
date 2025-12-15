@@ -70,17 +70,47 @@ export default function ImageUpload({
           body: formData
         })
 
+        let result
+        try {
+          result = await response.json()
+        } catch (parseError) {
+          console.error('Failed to parse upload response:', parseError)
+          throw new Error('Server returned invalid response')
+        }
+        
         if (!response.ok) {
-          const error = await response.json()
-          throw new Error(error.error || 'Upload failed')
+          console.error('Upload failed:', result)
+          throw new Error(result.error || result.details || `Upload failed with status ${response.status}`)
         }
 
-        const result = await response.json()
-        return result.data.url // Return the full image URL
+        console.log('Upload success - full response:', JSON.stringify(result, null, 2))
+        
+        // Ensure URL starts with / for proper path resolution
+        const url = result.data?.url || result.url || ''
+        console.log('Extracted URL:', url)
+        
+        if (!url) {
+          console.error('No URL in response. Response data:', result.data)
+          throw new Error('No URL returned from upload')
+        }
+        
+        const finalUrl = url.startsWith('/') ? url : `/${url}`
+        console.log('Final URL:', finalUrl)
+        
+        return finalUrl
       })
 
       const uploadedUrls = await Promise.all(uploadPromises)
-      const newImages = [...images, ...uploadedUrls]
+      
+      // Filter out any empty or invalid URLs
+      const validUrls = uploadedUrls.filter(url => url && typeof url === 'string' && url.length > 1)
+      
+      if (validUrls.length === 0) {
+        throw new Error('No valid image URLs returned from upload')
+      }
+      
+      const newImages = [...images, ...validUrls]
+      console.log('Setting images:', newImages)
       setImages(newImages)
       onImagesChange(newImages)
       setUploadProgress('Upload complete!')
@@ -157,19 +187,34 @@ export default function ImageUpload({
         </div>
       ) : (
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-          {images.map((image, index) => (
+          {images.map((image, index) => {
+            // Debug: log each image URL
+            console.log(`Image ${index + 1}:`, image)
+            
+            // Skip empty or invalid URLs
+            const isValidUrl = image && typeof image === 'string' && image.length > 0
+            
+            return (
             <div key={index} className="relative group">
               <div className="aspect-square rounded-lg overflow-hidden bg-gray-100 border-2 border-gray-200">
+                {isValidUrl ? (
                 <img
                   src={image}
                   alt={`Upload ${index + 1}`}
                   className="w-full h-full object-cover"
                   onError={(e) => {
                     const target = e.target as HTMLImageElement;
+                    console.error(`Failed to load image: ${image}`)
                     target.onerror = null;
                     target.src = '/placeholder.jpg';
                   }}
+                  onLoad={() => console.log(`Image loaded successfully: ${image}`)}
                 />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center bg-red-100 text-red-500 text-xs p-2">
+                    Invalid URL
+                  </div>
+                )}
               </div>
               
               {/* Action buttons */}
@@ -201,7 +246,8 @@ export default function ImageUpload({
                 {index + 1}
               </div>
             </div>
-          ))}
+          )
+          })}
           
           {/* Add more button */}
           {images.length < maxImages && (
@@ -229,6 +275,11 @@ export default function ImageUpload({
               src={previewImage}
               alt="Preview"
               className="max-w-full max-h-full object-contain rounded-lg"
+              onError={(e) => {
+                const target = e.target as HTMLImageElement;
+                target.onerror = null;
+                target.src = '/placeholder.jpg';
+              }}
             />
             <Button
               type="button"
