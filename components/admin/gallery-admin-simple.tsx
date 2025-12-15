@@ -45,6 +45,7 @@ interface PhotoAlbum {
   images: string[]
   category: string
   created_at: string
+  imageCount?: number
 }
 
 interface VideoItem {
@@ -104,48 +105,37 @@ function GalleryAdminSimple() {
     try {
       console.log('📸 Gallery Admin - Loading data...')
       
-      // Load photo albums - use active=false to get ALL items for admin
-      const photoResponse = await fetch('/api/gallery?media_type=image&active=false')
+      // Load photo albums - use active=false to get ALL items for admin, with_thumbnails for efficient loading
+      const photoResponse = await fetch('/api/gallery?media_type=image&active=false&with_thumbnails=true')
       console.log('📸 Gallery Admin - Photo response status:', photoResponse.status)
       
       if (photoResponse.ok) {
         const photoResult = await photoResponse.json()
         console.log('📸 Gallery Admin - Photo data received:', photoResult)
         const photoData = photoResult.data || []
-        console.log('📸 Gallery Admin - Number of photos:', photoData.length)
+        console.log('📸 Gallery Admin - Number of albums:', photoData.length)
         
-        // Group photos by title to create albums
-        const albumMap = new Map<string, PhotoAlbum>()
-        
-        photoData.forEach((item: any, index: number) => {
-          console.log(`📸 Gallery Admin - Photo ${index}:`, {
+        // Convert server response to PhotoAlbum format
+        const albums: PhotoAlbum[] = photoData.map((item: any) => {
+          console.log(`📸 Gallery Admin - Album:`, {
             id: item.id,
-            title_en: item.title_en,
-            media_url: item.media_url,
-            category: item.category
+            title: item.title_en,
+            thumbnail: item.thumbnail,
+            imageCount: item.imageCount
           })
           
-          const key = item.title_en || 'Untitled Album'
-          if (!albumMap.has(key)) {
-            albumMap.set(key, {
-              id: item.id,
-              title: item.title_en || 'Untitled Album',
-              location: 'Bil\'in, Palestine',
-              images: [],
-              category: item.category || 'general',
-              created_at: item.created_at
-            })
-          }
-          if (item.media_url) {
-            console.log(`📸 Gallery Admin - Adding image to album "${key}":`, item.media_url)
-            albumMap.get(key)!.images.push(item.media_url)
-          } else {
-            console.warn(`📸 Gallery Admin - Photo ${index} has no media_url!`)
+          return {
+            id: item.id,
+            title: item.title_en || 'Untitled Album',
+            location: 'Bil\'in, Palestine',
+            images: item.thumbnail ? [item.thumbnail] : [], // Use thumbnail as first image
+            category: item.category || 'general',
+            created_at: item.created_at,
+            imageCount: item.imageCount || 1
           }
         })
         
-        const albums = Array.from(albumMap.values())
-        console.log('📸 Gallery Admin - Albums created:', albums.length, albums)
+        console.log('📸 Gallery Admin - Albums loaded:', albums.length, albums)
         setPhotoAlbums(albums)
       } else {
         console.error('Error loading photos:', await photoResponse.text())
@@ -751,7 +741,7 @@ function GalleryAdminSimple() {
                         </div>
                         <div className="absolute top-3 right-3">
                           <Badge variant="secondary" className="bg-black bg-opacity-50 text-white">
-                            {album.images.length} photos
+                            {album.imageCount || album.images.length} photos
                           </Badge>
                         </div>
                       </div>
