@@ -23,6 +23,8 @@ export async function GET(request: NextRequest) {
     const metadataOnly = searchParams.get('metadata_only') === 'true'
     const withThumbnails = searchParams.get('with_thumbnails') === 'true'
     
+    console.log('📸 Gallery API - Request params:', { limit, category, media_type, active, metadataOnly, withThumbnails })
+    
     // For with_thumbnails mode: fetch all items but we'll process to get first image per album
     // For metadata_only requests, we select only essential fields (no media_url)
     // This dramatically improves performance for listing pages
@@ -52,6 +54,12 @@ export async function GET(request: NextRequest) {
     }
     
     const result = await query
+    
+    console.log('📸 Gallery API - Query result:', { 
+      error: result.error, 
+      dataLength: result.data?.length,
+      firstItem: result.data?.[0]
+    })
     
     if (result.error) {
       return NextResponse.json({ error: result.error.message }, { status: 500 })
