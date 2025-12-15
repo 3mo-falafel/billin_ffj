@@ -29,20 +29,23 @@ export default function ImageUpload({
   const [uploadProgress, setUploadProgress] = useState<string>('')
   const [previewImage, setPreviewImage] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const initializedRef = useRef(false)
 
   // Sync images state when existingImages prop changes
-  // Only sync if existingImages actually changed (avoid resetting on every render)
   useEffect(() => {
-    // Check if existingImages is different from current images
+    // On initial mount or when existingImages changes significantly
     const existingStr = JSON.stringify(existingImages)
     const currentStr = JSON.stringify(images)
     
-    if (existingStr !== currentStr && existingImages.length > 0) {
-      console.log('🖼️ ImageUpload useEffect - syncing from existingImages:', existingImages)
+    if (!initializedRef.current) {
+      // First mount - always sync
+      console.log('🖼️ ImageUpload - Initial mount, setting images:', existingImages)
       setImages(existingImages)
-    } else if (existingImages.length === 0 && images.length > 0) {
-      // Don't reset images if parent has empty array but we have uploads
-      console.log('🖼️ ImageUpload useEffect - keeping local images, not resetting to empty')
+      initializedRef.current = true
+    } else if (existingStr !== currentStr && existingImages.length > 0) {
+      // Subsequent update with new images from parent
+      console.log('🖼️ ImageUpload - Syncing from parent:', existingImages)
+      setImages(existingImages)
     }
   }, [existingImages])
 

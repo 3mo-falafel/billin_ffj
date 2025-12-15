@@ -488,6 +488,7 @@ function GalleryAdminSimple() {
                         
                         <div>
                           <ImageUploadStorage
+                            key={editingItem?.id || 'new-album'}
                             onImagesChange={(images) => setPhotoFormData(prev => ({ ...prev, images }))}
                             maxImages={20}
                             existingImages={photoFormData.images}

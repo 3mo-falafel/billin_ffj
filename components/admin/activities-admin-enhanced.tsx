@@ -565,6 +565,7 @@ export default function ActivitiesAdminEnhanced() {
                     </div>
                   )}
                   <ImageUpload
+                    key={editingActivity?.id || 'new'}
                     onImagesChange={(images) => {
                       console.log('🖼️ ImageUpload callback - received images:', images)
                       setFormData(prev => ({ ...prev, images }))
@@ -675,13 +676,18 @@ export default function ActivitiesAdminEnhanced() {
                       {categoryInfo.icon} {categoryInfo.label}
                     </Badge>
                   </div>
-                  <div className="absolute top-3 right-3">
+                  <div className="absolute top-3 right-3 flex flex-col gap-1 items-end">
                     <Badge 
                       variant={activity.status === 'published' ? 'default' : 'secondary'}
                       className={activity.status === 'published' ? 'bg-green-500' : ''}
                     >
                       {activity.status}
                     </Badge>
+                    {activity.images.length > 0 && (
+                      <Badge variant="secondary" className="bg-black/50 text-white">
+                        {activity.images.length} photo{activity.images.length > 1 ? 's' : ''}
+                      </Badge>
+                    )}
                   </div>
                 </div>
               </CardHeader>

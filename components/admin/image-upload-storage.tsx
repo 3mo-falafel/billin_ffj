@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Image as ImageIcon, Upload, X, Loader2 } from 'lucide-react'
@@ -18,10 +18,21 @@ export default function ImageUploadStorage({
 }: ImageUploadStorageProps) {
   const [images, setImages] = useState<string[]>(existingImages)
   const [uploading, setUploading] = useState(false)
+  const initializedRef = useRef(false)
 
   // Sync with existingImages when they change
   useEffect(() => {
-    if (existingImages.length > 0 && JSON.stringify(existingImages) !== JSON.stringify(images)) {
+    const existingStr = JSON.stringify(existingImages)
+    const currentStr = JSON.stringify(images)
+    
+    if (!initializedRef.current) {
+      // First mount - always sync
+      console.log('🖼️ ImageUploadStorage - Initial mount, setting images:', existingImages)
+      setImages(existingImages)
+      initializedRef.current = true
+    } else if (existingStr !== currentStr && existingImages.length > 0) {
+      // Subsequent update with new images from parent
+      console.log('🖼️ ImageUploadStorage - Syncing from parent:', existingImages)
       setImages(existingImages)
     }
   }, [existingImages])

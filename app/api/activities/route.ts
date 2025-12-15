@@ -78,20 +78,18 @@ export async function POST(request: NextRequest) {
     
     const db = createClient()
     
-    // Try to insert with gallery_images first, fallback to without if column doesn't exist
+    // Insert activity with gallery_images
     let result = await db.from('activities').insert([{
       title_en,
       title_ar,
       description_en,
       description_ar,
       image_url: mainImageUrl,
+      gallery_images: JSON.stringify(images), // Save as JSON string for PostgreSQL
       video_url: video_url || null,
       date,
       is_active: is_active !== undefined ? is_active : true
     }])
-    
-    // If that worked, try to update with gallery_images (in case column exists)
-    // This is a workaround for schema compatibility
     
     if (result.error) {
       console.error('📝 ACTIVITIES API - Insert error:', result.error)

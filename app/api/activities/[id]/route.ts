@@ -77,6 +77,7 @@ export async function PUT(
       description_en,
       description_ar,
       image_url: mainImageUrl,
+      gallery_images: JSON.stringify(images), // Save as JSON string for PostgreSQL
       video_url: video_url || null,
       date,
       is_active: is_active !== undefined ? is_active : true
