@@ -714,26 +714,35 @@ function GalleryAdminSimple() {
                 return (
                   <Card key={album.id} className="group hover:shadow-lg transition-all duration-300 overflow-hidden">
                     <CardHeader className="p-0">
-                      {album.images.length > 0 && (
-                        <div className="relative aspect-square overflow-hidden">
+                      <div className="relative aspect-square overflow-hidden bg-gray-100">
+                        {album.images.length > 0 ? (
                           <img
                             src={album.images[0]}
                             alt={album.title}
                             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300 cursor-pointer"
                             onClick={() => setPreviewImage(album.images[0])}
+                            onError={(e) => {
+                              const target = e.target as HTMLImageElement;
+                              target.onerror = null;
+                              target.src = '/placeholder.jpg';
+                            }}
                           />
-                          <div className="absolute top-3 left-3">
-                            <Badge className={`${categoryInfo.color} text-white`}>
-                              {categoryInfo.icon} {categoryInfo.label}
-                            </Badge>
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center">
+                            <ImageIcon className="w-16 h-16 text-gray-300" />
                           </div>
-                          <div className="absolute top-3 right-3">
-                            <Badge variant="secondary" className="bg-black bg-opacity-50 text-white">
-                              {album.images.length} photos
-                            </Badge>
-                          </div>
+                        )}
+                        <div className="absolute top-3 left-3">
+                          <Badge className={`${categoryInfo.color} text-white`}>
+                            {categoryInfo.icon} {categoryInfo.label}
+                          </Badge>
                         </div>
-                      )}
+                        <div className="absolute top-3 right-3">
+                          <Badge variant="secondary" className="bg-black bg-opacity-50 text-white">
+                            {album.images.length} photos
+                          </Badge>
+                        </div>
+                      </div>
                     </CardHeader>
                     
                     <CardContent className="p-4">
@@ -779,19 +788,28 @@ function GalleryAdminSimple() {
                   <Card key={album.id} className="hover:shadow-md transition-shadow">
                     <CardContent className="p-6">
                       <div className="flex gap-6">
-                        {album.images.length > 0 && (
-                          <div className="relative w-32 h-32 flex-shrink-0">
+                        <div className="relative w-32 h-32 flex-shrink-0 bg-gray-100 rounded-lg">
+                          {album.images.length > 0 ? (
                             <img
                               src={album.images[0]}
                               alt={album.title}
                               className="w-full h-full object-cover rounded-lg cursor-pointer"
                               onClick={() => setPreviewImage(album.images[0])}
+                              onError={(e) => {
+                                const target = e.target as HTMLImageElement;
+                                target.onerror = null;
+                                target.src = '/placeholder.jpg';
+                              }}
                             />
-                            <Badge className="absolute top-2 left-2 text-xs bg-black bg-opacity-50 text-white">
-                              {album.images.length}
-                            </Badge>
-                          </div>
-                        )}
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center">
+                              <ImageIcon className="w-10 h-10 text-gray-300" />
+                            </div>
+                          )}
+                          <Badge className="absolute top-2 left-2 text-xs bg-black bg-opacity-50 text-white">
+                            {album.images.length}
+                          </Badge>
+                        </div>
                         
                         <div className="flex-1 space-y-3">
                           <div>
@@ -814,7 +832,7 @@ function GalleryAdminSimple() {
                                 <Edit className="w-4 h-4 mr-1" />
                                 Edit
                               </Button>
-                              <Button size="sm" variant="outline" onClick={() => setPreviewImage(album.images[0])}>
+                              <Button size="sm" variant="outline" onClick={() => album.images.length > 0 && setPreviewImage(album.images[0])}>
                                 <Eye className="w-4 h-4 mr-1" />
                                 View
                               </Button>

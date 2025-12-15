@@ -1,10 +1,9 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Image as ImageIcon, Upload, X, Loader2 } from 'lucide-react'
-import { createClient } from '@/lib/supabase/client'
 
 interface ImageUploadStorageProps {
   onImagesChange: (images: string[]) => void
@@ -19,21 +18,34 @@ export default function ImageUploadStorage({
 }: ImageUploadStorageProps) {
   const [images, setImages] = useState<string[]>(existingImages)
   const [uploading, setUploading] = useState(false)
-  const [uploadProgress, setUploadProgress] = useState<{ [key: string]: number }>({})
+
+  // Sync with existingImages when they change
+  useEffect(() => {
+    if (existingImages.length > 0 && JSON.stringify(existingImages) !== JSON.stringify(images)) {
+      setImages(existingImages)
+    }
+  }, [existingImages])
 
   const uploadImage = async (file: File): Promise<string> => {
-    // Convert file to base64 for storage in database
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader()
-      reader.onload = () => {
-        const result = reader.result as string
-        resolve(result)
-      }
-      reader.onerror = () => {
-        reject(new Error('Failed to read file'))
-      }
-      reader.readAsDataURL(file)
+    // Use the /api/upload endpoint to save files to disk
+    const formData = new FormData()
+    formData.append('file', file)
+    formData.append('maxWidth', '1600')
+    formData.append('quality', '80')
+    formData.append('generateThumbnail', 'true')
+
+    const response = await fetch('/api/upload', {
+      method: 'POST',
+      body: formData
     })
+
+    if (!response.ok) {
+      const error = await response.json()
+      throw new Error(error.error || 'Upload failed')
+    }
+
+    const result = await response.json()
+    return result.data?.url || result.url
   }
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -56,9 +68,9 @@ export default function ImageUploadStorage({
           throw new Error(`${file.name} is not an image file`)
         }
         
-        // Validate file size (5MB max)
-        if (file.size > 5 * 1024 * 1024) {
-          throw new Error(`${file.name} is too large. Maximum size is 5MB`)
+        // Validate file size (10MB max)
+        if (file.size > 10 * 1024 * 1024) {
+          throw new Error(`${file.name} is too large. Maximum size is 10MB`)
         }
         
         const imageUrl = await uploadImage(file)
@@ -76,7 +88,6 @@ export default function ImageUploadStorage({
       alert(`Upload failed: ${error instanceof Error ? error.message : 'Unknown error'}`)
     } finally {
       setUploading(false)
-      setUploadProgress({})
     }
   }
 
@@ -86,37 +97,6 @@ export default function ImageUploadStorage({
     onImagesChange(newImages)
   }
 
-  const downloadImage = async (imageUrl: string, filename: string) => {
-    try {
-      let blob: Blob
-      
-      if (imageUrl.startsWith('data:')) {
-        // Handle base64 data URLs
-        const response = await fetch(imageUrl)
-        blob = await response.blob()
-      } else {
-        // Handle regular URLs
-        const response = await fetch(imageUrl)
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`)
-        }
-        blob = await response.blob()
-      }
-      
-      const url = window.URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = url
-      a.download = filename || 'image.jpg'
-      document.body.appendChild(a)
-      a.click()
-      window.URL.revokeObjectURL(url)
-      document.body.removeChild(a)
-    } catch (error) {
-      console.error('Download failed:', error)
-      alert('Failed to download image')
-    }
-  }
-
   return (
     <div className="space-y-4">
       <div>
@@ -124,7 +104,7 @@ export default function ImageUploadStorage({
         <div className="mt-1 border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
           <ImageIcon className="w-12 h-12 text-gray-400 mx-auto mb-4" />
           <p className="text-gray-600 mb-4">
-            Upload up to {maxImages} images (Max 5MB each)
+            Upload up to {maxImages} images (Max 10MB each)
           </p>
           <input
             type="file"
@@ -171,17 +151,14 @@ export default function ImageUploadStorage({
                   src={image}
                   alt={`Upload ${index + 1}`}
                   className="w-full h-24 object-cover rounded-lg border"
+                  onError={(e) => {
+                    const target = e.target as HTMLImageElement;
+                    target.onerror = null;
+                    target.src = '/placeholder.jpg';
+                  }}
                 />
                 <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-50 transition-all duration-200 rounded-lg flex items-center justify-center">
                   <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex space-x-1">
-                    <Button
-                      size="sm"
-                      variant="secondary"
-                      onClick={() => downloadImage(image, `image-${index + 1}.jpg`)}
-                      className="h-8 w-8 p-0"
-                    >
-                      <ImageIcon className="w-3 h-3" />
-                    </Button>
                     <Button
                       size="sm"
                       variant="destructive"
