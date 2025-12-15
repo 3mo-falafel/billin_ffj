@@ -467,17 +467,22 @@ export default function GalleryAdminWrapper() {
                   <Card key={album.id} className="group hover:shadow-lg transition-all duration-300 overflow-hidden">
                     <CardHeader className="p-0">
                       <div className="relative aspect-square overflow-hidden bg-gradient-to-br from-gray-100 to-gray-200">
-                        {/* Show thumbnail if available, otherwise placeholder */}
-                        {album.thumbnail ? (
+                        {/* Show thumbnail if available and valid (not base64), otherwise placeholder */}
+                        {album.thumbnail && !album.thumbnail.startsWith('data:') ? (
                           <img
                             src={album.thumbnail}
                             alt={album.title}
                             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                             loading="lazy"
+                            onError={(e) => {
+                              // On error, hide the image and show placeholder
+                              (e.target as HTMLImageElement).style.display = 'none'
+                            }}
                           />
                         ) : (
-                          <div className="w-full h-full flex items-center justify-center">
-                            <ImageIcon className="w-16 h-16 text-gray-400" />
+                          <div className="w-full h-full flex flex-col items-center justify-center text-gray-400">
+                            <ImageIcon className="w-16 h-16 mb-2" />
+                            <span className="text-sm">No preview available</span>
                           </div>
                         )}
                         <div className="absolute top-3 left-3">
@@ -537,12 +542,15 @@ export default function GalleryAdminWrapper() {
                     <CardContent className="p-6">
                       <div className="flex gap-6">
                         <div className="relative w-32 h-32 flex-shrink-0 bg-gradient-to-br from-gray-100 to-gray-200 rounded-lg overflow-hidden">
-                          {album.thumbnail ? (
+                          {album.thumbnail && !album.thumbnail.startsWith('data:') ? (
                             <img
                               src={album.thumbnail}
                               alt={album.title}
                               className="w-full h-full object-cover"
                               loading="lazy"
+                              onError={(e) => {
+                                (e.target as HTMLImageElement).style.display = 'none'
+                              }}
                             />
                           ) : (
                             <div className="w-full h-full flex items-center justify-center">

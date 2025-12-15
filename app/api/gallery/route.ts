@@ -70,30 +70,53 @@ export async function GET(request: NextRequest) {
       const albumMap = new Map<string, { 
         id: string
         title_en: string
-        thumbnail: string
+        thumbnail: string | null
         category: string
         created_at: string
         imageCount: number
+        allImages: string[]
       }>()
       
       result.data.forEach((item: GalleryItem) => {
         const key = item.title_en || 'Untitled Album'
+        // Check if media_url is a valid file path (not base64)
+        const isValidPath = item.media_url && !item.media_url.startsWith('data:')
+        
         if (!albumMap.has(key)) {
           albumMap.set(key, {
             id: item.id,
             title_en: item.title_en,
-            thumbnail: item.media_url, // First image becomes thumbnail
+            thumbnail: isValidPath ? item.media_url : null, // Only use file paths as thumbnails
             category: item.category,
             created_at: item.created_at,
-            imageCount: 1
+            imageCount: 1,
+            allImages: isValidPath ? [item.media_url] : []
           })
         } else {
-          albumMap.get(key)!.imageCount++
+          const album = albumMap.get(key)!
+          album.imageCount++
+          // If we don't have a thumbnail yet and this is a valid path, use it
+          if (!album.thumbnail && isValidPath) {
+            album.thumbnail = item.media_url
+          }
+          if (isValidPath) {
+            album.allImages.push(item.media_url)
+          }
         }
       })
       
+      // Convert map to array and set thumbnail to first valid image
+      const albums = Array.from(albumMap.values()).map(album => ({
+        id: album.id,
+        title_en: album.title_en,
+        thumbnail: album.thumbnail || (album.allImages.length > 0 ? album.allImages[0] : null),
+        category: album.category,
+        created_at: album.created_at,
+        imageCount: album.imageCount
+      }))
+      
       return NextResponse.json({ 
-        data: Array.from(albumMap.values()),
+        data: albums,
         mode: 'albums_with_thumbnails'
       })
     }
