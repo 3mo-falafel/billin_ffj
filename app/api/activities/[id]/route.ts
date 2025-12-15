@@ -63,6 +63,13 @@ export async function PUT(
     const images = gallery_images || (image_url ? [image_url] : [])
     const mainImageUrl = images.length > 0 ? images[0] : null
     
+    console.log('📝 ACTIVITIES API - Updating activity with images:', {
+      id: params.id,
+      image_url: mainImageUrl,
+      gallery_images: images,
+      images_count: images.length
+    })
+    
     const db = createClient()
     const result = await db.from('activities').update({
       title_en,
@@ -70,15 +77,17 @@ export async function PUT(
       description_en,
       description_ar,
       image_url: mainImageUrl,
-      gallery_images: JSON.stringify(images),
       video_url: video_url || null,
       date,
       is_active: is_active !== undefined ? is_active : true
     }).eq('id', params.id)
     
     if (result.error) {
+      console.error('📝 ACTIVITIES API - Update error:', result.error)
       return NextResponse.json({ error: result.error.message }, { status: 500 })
     }
+    
+    console.log('📝 ACTIVITIES API - Activity updated successfully')
     
     return NextResponse.json({ 
       data: result.data,

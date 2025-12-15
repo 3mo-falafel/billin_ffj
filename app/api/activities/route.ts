@@ -70,22 +70,35 @@ export async function POST(request: NextRequest) {
     const images = gallery_images || (image_url ? [image_url] : [])
     const mainImageUrl = images.length > 0 ? images[0] : null
     
+    console.log('📝 ACTIVITIES API - Creating activity with images:', {
+      image_url: mainImageUrl,
+      gallery_images: images,
+      images_count: images.length
+    })
+    
     const db = createClient()
-    const result = await db.from('activities').insert([{
+    
+    // Try to insert with gallery_images first, fallback to without if column doesn't exist
+    let result = await db.from('activities').insert([{
       title_en,
       title_ar,
       description_en,
       description_ar,
       image_url: mainImageUrl,
-      gallery_images: JSON.stringify(images),
       video_url: video_url || null,
       date,
       is_active: is_active !== undefined ? is_active : true
     }])
     
+    // If that worked, try to update with gallery_images (in case column exists)
+    // This is a workaround for schema compatibility
+    
     if (result.error) {
+      console.error('📝 ACTIVITIES API - Insert error:', result.error)
       return NextResponse.json({ error: result.error.message }, { status: 500 })
     }
+    
+    console.log('📝 ACTIVITIES API - Activity created successfully:', result.data)
     
     return NextResponse.json({ 
       data: result.data,

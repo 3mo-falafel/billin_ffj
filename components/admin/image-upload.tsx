@@ -31,8 +31,19 @@ export default function ImageUpload({
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   // Sync images state when existingImages prop changes
+  // Only sync if existingImages actually changed (avoid resetting on every render)
   useEffect(() => {
-    setImages(existingImages)
+    // Check if existingImages is different from current images
+    const existingStr = JSON.stringify(existingImages)
+    const currentStr = JSON.stringify(images)
+    
+    if (existingStr !== currentStr && existingImages.length > 0) {
+      console.log('🖼️ ImageUpload useEffect - syncing from existingImages:', existingImages)
+      setImages(existingImages)
+    } else if (existingImages.length === 0 && images.length > 0) {
+      // Don't reset images if parent has empty array but we have uploads
+      console.log('🖼️ ImageUpload useEffect - keeping local images, not resetting to empty')
+    }
   }, [existingImages])
 
   const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {

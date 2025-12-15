@@ -266,7 +266,9 @@ export default function ActivitiesAdminEnhanced() {
         is_active: formData.status === 'published'
       }
 
-      console.log('🔍 ACTIVITIES ADMIN DEBUG - Submitting data:', apiData)
+      console.log('🔍 ACTIVITIES ADMIN DEBUG - formData.images:', formData.images)
+      console.log('🔍 ACTIVITIES ADMIN DEBUG - images length:', formData.images.length)
+      console.log('🔍 ACTIVITIES ADMIN DEBUG - Submitting data:', JSON.stringify(apiData, null, 2))
 
       // Get API client
       const { createClient } = await import('@/lib/api/client')
@@ -556,8 +558,17 @@ export default function ActivitiesAdminEnhanced() {
                 {/* Image Upload */}
                 <div className="bg-gradient-to-r from-blue-50 to-purple-50 p-4 rounded-lg">
                   <h3 className="font-semibold text-gray-800 mb-4">Activity Images</h3>
+                  {/* Debug: Show current images in formData */}
+                  {formData.images.length > 0 && (
+                    <div className="mb-2 p-2 bg-green-100 rounded text-xs">
+                      <strong>Debug - Images in form:</strong> {formData.images.join(', ')}
+                    </div>
+                  )}
                   <ImageUpload
-                    onImagesChange={(images) => setFormData(prev => ({ ...prev, images }))}
+                    onImagesChange={(images) => {
+                      console.log('🖼️ ImageUpload callback - received images:', images)
+                      setFormData(prev => ({ ...prev, images }))
+                    }}
                     maxImages={5}
                     existingImages={formData.images}
                   />
