@@ -768,50 +768,39 @@ export default function GalleryAdminWrapper() {
                     
                     console.log('🔍 GALLERY ADMIN DEBUG - Starting image uploads...', files.length, 'files')
                     
-                    // Function to compress image
-                    const compressImage = (file: File, maxWidth: number = 1200, quality: number = 0.7): Promise<string> => {
-                      return new Promise((resolve, reject) => {
-                        const reader = new FileReader()
-                        reader.onload = (e) => {
-                          const img = new window.Image()
-                          img.onload = () => {
-                            const canvas = document.createElement('canvas')
-                            let width = img.width
-                            let height = img.height
-                            
-                            // Scale down if too large
-                            if (width > maxWidth) {
-                              height = (height * maxWidth) / width
-                              width = maxWidth
-                            }
-                            
-                            canvas.width = width
-                            canvas.height = height
-                            const ctx = canvas.getContext('2d')
-                            ctx?.drawImage(img, 0, 0, width, height)
-                            
-                            // Convert to compressed JPEG
-                            const compressedDataUrl = canvas.toDataURL('image/jpeg', quality)
-                            console.log('🔍 GALLERY ADMIN DEBUG - Compressed image:', file.name, 'from', Math.round(file.size/1024), 'KB to', Math.round(compressedDataUrl.length/1024), 'KB')
-                            resolve(compressedDataUrl)
-                          }
-                          img.onerror = () => reject(new Error('Failed to load image'))
-                          img.src = e.target?.result as string
-                        }
-                        reader.onerror = () => reject(new Error('Failed to read file'))
-                        reader.readAsDataURL(file)
+                    // Function to upload image to server
+                    const uploadImage = async (file: File): Promise<string> => {
+                      const formData = new FormData()
+                      formData.append('file', file)
+                      formData.append('maxWidth', '1600')
+                      formData.append('quality', '80')
+                      formData.append('generateThumbnail', 'true')
+
+                      const response = await fetch('/api/upload', {
+                        method: 'POST',
+                        body: formData
                       })
+
+                      if (!response.ok) {
+                        const error = await response.json()
+                        throw new Error(error.error || 'Upload failed')
+                      }
+
+                      const result = await response.json()
+                      const imageUrl = result.data?.url || result.url
+                      console.log('🔍 GALLERY ADMIN DEBUG - Uploaded image:', file.name, '→', imageUrl)
+                      return imageUrl
                     }
                     
                     try {
-                      // Compress all images (replaces existing, not adds to them)
-                      const imageUrls = await Promise.all(files.map(file => compressImage(file)))
-                      console.log('🔍 GALLERY ADMIN DEBUG - All images compressed successfully:', imageUrls.length)
+                      // Upload all images to server (replaces existing, not adds to them)
+                      const imageUrls = await Promise.all(files.map(file => uploadImage(file)))
+                      console.log('🔍 GALLERY ADMIN DEBUG - All images uploaded successfully:', imageUrls.length)
                       // Replace images completely (not append)
                       setPhotoFormData(prev => ({ ...prev, images: imageUrls }))
                     } catch (error) {
-                      console.error('🔍 GALLERY ADMIN DEBUG - Error converting images:', error)
-                      alert('Failed to process images. Please try again.')
+                      console.error('🔍 GALLERY ADMIN DEBUG - Error uploading images:', error)
+                      alert('Failed to upload images. Please try again.')
                     }
                   }}
                 />
@@ -1066,37 +1055,28 @@ export default function GalleryAdminWrapper() {
                         
                         const newImages: string[] = []
                         for (const file of Array.from(files)) {
-                          // Compress the image
-                          const reader = new FileReader()
-                          const base64 = await new Promise<string>((resolve) => {
-                            reader.onload = () => resolve(reader.result as string)
-                            reader.readAsDataURL(file)
+                          // Upload the image to server
+                          const formData = new FormData()
+                          formData.append('file', file)
+                          formData.append('maxWidth', '1600')
+                          formData.append('quality', '80')
+                          formData.append('generateThumbnail', 'true')
+
+                          const response = await fetch('/api/upload', {
+                            method: 'POST',
+                            body: formData
                           })
-                          
-                          // Create image element for compression
-                          const img = new Image()
-                          const compressedBase64 = await new Promise<string>((resolve) => {
-                            img.onload = () => {
-                              const canvas = document.createElement('canvas')
-                              const maxWidth = 1200
-                              let width = img.width
-                              let height = img.height
-                              
-                              if (width > maxWidth) {
-                                height = (height * maxWidth) / width
-                                width = maxWidth
-                              }
-                              
-                              canvas.width = width
-                              canvas.height = height
-                              const ctx = canvas.getContext('2d')!
-                              ctx.drawImage(img, 0, 0, width, height)
-                              resolve(canvas.toDataURL('image/jpeg', 0.7))
-                            }
-                            img.src = base64
-                          })
-                          
-                          newImages.push(compressedBase64)
+
+                          if (!response.ok) {
+                            const error = await response.json()
+                            console.error('Upload failed:', error)
+                            continue
+                          }
+
+                          const result = await response.json()
+                          const imageUrl = result.data?.url || result.url
+                          console.log('🔍 GALLERY ADMIN DEBUG - Uploaded image:', file.name, '→', imageUrl)
+                          newImages.push(imageUrl)
                         }
                         
                         setPhotoFormData({ 
