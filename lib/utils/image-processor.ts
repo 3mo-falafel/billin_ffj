@@ -36,6 +36,9 @@ const ALLOWED_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp']
  * Ensure upload directories exist
  */
 export async function ensureUploadDirs() {
+  console.log('📁 ensureUploadDirs - UPLOAD_DIR:', UPLOAD_DIR)
+  console.log('📁 ensureUploadDirs - process.cwd():', process.cwd())
+  
   const dirs = [
     UPLOAD_DIR,
     path.join(UPLOAD_DIR, 'images'),
@@ -45,8 +48,16 @@ export async function ensureUploadDirs() {
   for (const dir of dirs) {
     try {
       await fs.access(dir)
+      console.log('📁 Directory exists:', dir)
     } catch {
-      await fs.mkdir(dir, { recursive: true })
+      console.log('📁 Creating directory:', dir)
+      try {
+        await fs.mkdir(dir, { recursive: true })
+        console.log('📁 Directory created successfully:', dir)
+      } catch (mkdirError) {
+        console.error('📁 Failed to create directory:', dir, mkdirError)
+        throw mkdirError
+      }
     }
   }
 }
@@ -145,7 +156,18 @@ export async function processImage(
   }
 
   const processedBuffer = await imageProcessor.toBuffer()
+  
+  console.log('💾 Writing file to:', outputPath)
   await fs.writeFile(outputPath, processedBuffer)
+  
+  // Verify file was written
+  try {
+    const fileStats = await fs.stat(outputPath)
+    console.log('💾 File written successfully, size:', fileStats.size, 'bytes')
+  } catch (verifyError) {
+    console.error('💾 ERROR: File was not written!', verifyError)
+    throw new Error(`Failed to write file to ${outputPath}`)
+  }
 
   const processedMetadata = await sharp(processedBuffer).metadata()
   const processedSize = (await fs.stat(outputPath)).size
