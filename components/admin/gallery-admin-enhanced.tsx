@@ -101,7 +101,8 @@ export default function GalleryAdminEnhanced() {
 
   const loadGalleryItems = async () => {
     try {
-      const response = await fetch('/api/gallery')
+      // Fetch all gallery items (including inactive) for admin management
+      const response = await fetch('/api/gallery?active=false')
       if (!response.ok) {
         throw new Error(`Failed to load gallery items: ${await response.text()}`)
       }
@@ -109,23 +110,58 @@ export default function GalleryAdminEnhanced() {
       const result = await response.json()
       const data = result.data || []
       
-      // Transform the data to match our interface
-      const transformedItems: GalleryItem[] = data.map((item: any) => ({
-        id: item.id,
-        title_en: item.title_en || 'Untitled',
-        title_ar: item.title_ar || 'بدون عنوان',
-        description_en: item.description_en || '',
-        description_ar: item.description_ar || '',
-        category: item.category || 'general',
-        date_taken: new Date(item.created_at).toISOString().split('T')[0],
+      // Group items by album title (like the public gallery does)
+      const albumMap = new Map<string, {
+        id: string
+        title_en: string
+        title_ar: string
+        description_en: string
+        description_ar: string
+        category: string
+        images: string[]
+        is_active: boolean
+        created_at: string
+      }>()
+      
+      data.forEach((item: any) => {
+        const key = item.title_en || 'Untitled'
+        if (!albumMap.has(key)) {
+          albumMap.set(key, {
+            id: item.id,
+            title_en: item.title_en || 'Untitled',
+            title_ar: item.title_ar || 'بدون عنوان',
+            description_en: item.description_en || '',
+            description_ar: item.description_ar || '',
+            category: item.category || 'general',
+            images: item.media_url ? [item.media_url] : [],
+            is_active: item.is_active !== false,
+            created_at: item.created_at
+          })
+        } else {
+          // Add image to existing album
+          if (item.media_url) {
+            albumMap.get(key)!.images.push(item.media_url)
+          }
+        }
+      })
+      
+      // Transform the grouped albums to match our interface
+      const transformedItems: GalleryItem[] = Array.from(albumMap.values()).map((album) => ({
+        id: album.id,
+        title_en: album.title_en,
+        title_ar: album.title_ar,
+        description_en: album.description_en,
+        description_ar: album.description_ar,
+        category: album.category,
+        date_taken: new Date(album.created_at).toISOString().split('T')[0],
         photographer: 'Bil\'in Media Center',
         location: 'Bil\'in, Palestine',
-        images: item.media_url ? [item.media_url] : [],
+        images: album.images,
         is_featured: false,
-        is_public: true,
-        tags: item.category ? [item.category] : [],
+        is_public: album.is_active,
+        tags: album.category ? [album.category] : [],
         views: 0,
-        created_at: item.created_at
+        created_at: album.created_at
       }))
       
       setGalleryItems(transformedItems)

@@ -118,6 +118,11 @@ export function EducationalPrograms() {
                       src={activity.image_url}
                       alt={activity.title_en}
                       className="w-full h-full object-cover"
+                      onError={(e) => {
+                        const target = e.target as HTMLImageElement;
+                        target.onerror = null;
+                        target.src = '/placeholder.jpg';
+                      }}
                     />
                   </div>
                 )}
@@ -152,6 +157,11 @@ export function EducationalPrograms() {
                             src={activity.image_url}
                             alt={activity.title_en}
                             className="w-full h-full object-cover"
+                            onError={(e) => {
+                              const target = e.target as HTMLImageElement;
+                              target.onerror = null;
+                              target.src = '/placeholder.jpg';
+                            }}
                           />
                         </div>
                       )}

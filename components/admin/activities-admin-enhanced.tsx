@@ -14,7 +14,10 @@ import {
   Eye,
   Languages,
   Save,
-  X
+  X,
+  ChevronLeft,
+  ChevronRight,
+  Image as ImageIcon
 } from 'lucide-react'
 import { Button } from '../ui/button'
 import { Input } from '../ui/input'
@@ -65,6 +68,86 @@ const categories = [
   { value: 'youth-program', label: 'Youth Program', color: 'bg-indigo-500', icon: '👥' }
 ]
 
+// Image Carousel Component for Activity Cards
+function ActivityImageCarousel({ images, title }: { images: string[], title: string }) {
+  const [currentIndex, setCurrentIndex] = useState(0)
+  
+  const goToPrevious = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    setCurrentIndex(prev => (prev === 0 ? images.length - 1 : prev - 1))
+  }
+  
+  const goToNext = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    setCurrentIndex(prev => (prev === images.length - 1 ? 0 : prev + 1))
+  }
+  
+  if (images.length === 0) {
+    return (
+      <div className="w-full h-full flex items-center justify-center">
+        <div className="text-gray-400 text-center">
+          <ImageIcon className="w-12 h-12 mx-auto mb-2 opacity-50" />
+          <p className="text-sm">No image</p>
+        </div>
+      </div>
+    )
+  }
+  
+  return (
+    <div className="relative w-full h-full">
+      <img
+        src={images[currentIndex]}
+        alt={`${title} - Image ${currentIndex + 1}`}
+        className="w-full h-full object-cover transition-opacity duration-300"
+        onError={(e) => {
+          const target = e.target as HTMLImageElement;
+          target.onerror = null;
+          target.src = '/placeholder.jpg';
+        }}
+      />
+      
+      {/* Navigation arrows - only show if more than 1 image */}
+      {images.length > 1 && (
+        <>
+          <button
+            onClick={goToPrevious}
+            className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white rounded-full p-1 transition-all opacity-0 group-hover:opacity-100"
+          >
+            <ChevronLeft className="w-5 h-5" />
+          </button>
+          <button
+            onClick={goToNext}
+            className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white rounded-full p-1 transition-all opacity-0 group-hover:opacity-100"
+          >
+            <ChevronRight className="w-5 h-5" />
+          </button>
+          
+          {/* Image counter */}
+          <div className="absolute bottom-2 left-1/2 -translate-x-1/2 bg-black/50 text-white text-xs px-2 py-1 rounded-full">
+            {currentIndex + 1} / {images.length}
+          </div>
+          
+          {/* Dot indicators */}
+          <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex gap-1">
+            {images.map((_, idx) => (
+              <button
+                key={idx}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  setCurrentIndex(idx)
+                }}
+                className={`w-2 h-2 rounded-full transition-all ${
+                  idx === currentIndex ? 'bg-white' : 'bg-white/50'
+                }`}
+              />
+            ))}
+          </div>
+        </>
+      )}
+    </div>
+  )
+}
+
 export default function ActivitiesAdminEnhanced() {
   const [activities, setActivities] = useState<Activity[]>([])
   const [searchTerm, setSearchTerm] = useState('')
@@ -101,8 +184,8 @@ export default function ActivitiesAdminEnhanced() {
       const { createClient } = await import('@/lib/api/client')
       const api = createClient()
       
-      // Fetch real activities from database
-      const { data, error } = await api.activities.getAll()
+      // Fetch ALL activities from database (including inactive for admin)
+      const { data, error } = await api.activities.getAll({ active: false })
       
       console.log('🔍 ADMIN ACTIVITIES DEBUG - Raw data from DB:', data)
       console.log('🔍 ADMIN ACTIVITIES DEBUG - Error from DB:', error)
@@ -113,21 +196,37 @@ export default function ActivitiesAdminEnhanced() {
       }
       
       // Transform database data to match component interface
-      const transformedActivities: Activity[] = (data || []).map(activity => ({
-        id: activity.id,
-        title_en: activity.title_en,
-        title_ar: activity.title_ar,
-        description_en: activity.description_en,
-        description_ar: activity.description_ar,
-        category: 'general', // Default category since DB doesn't have this field
-        date: activity.date,
-        time: '12:00', // Default time since DB doesn't have this field
-        location: 'Bil\'in Village', // Default location since DB doesn't have this field
-        capacity: 100, // Default capacity since DB doesn't have this field
-        images: activity.image_url ? [activity.image_url] : ['/placeholder.jpg'],
-        status: 'published' as 'draft' | 'published' | 'archived', // Default to published since no is_active field
-        created_at: activity.created_at
-      }))
+      const transformedActivities: Activity[] = (data || []).map(activity => {
+        // Parse gallery_images - could be JSON string or array
+        let images: string[] = []
+        if (activity.gallery_images) {
+          try {
+            images = typeof activity.gallery_images === 'string' 
+              ? JSON.parse(activity.gallery_images) 
+              : activity.gallery_images
+          } catch {
+            images = activity.image_url ? [activity.image_url] : []
+          }
+        } else if (activity.image_url) {
+          images = [activity.image_url]
+        }
+        
+        return {
+          id: activity.id,
+          title_en: activity.title_en,
+          title_ar: activity.title_ar,
+          description_en: activity.description_en,
+          description_ar: activity.description_ar,
+          category: activity.category || 'cultural-workshop',
+          date: activity.date,
+          time: '12:00', // Default time since DB doesn't have this field
+          location: 'Bil\'in Village', // Default location since DB doesn't have this field
+          capacity: 100, // Default capacity since DB doesn't have this field
+          images: images,
+          status: activity.is_active ? 'published' : 'draft' as 'draft' | 'published' | 'archived',
+          created_at: activity.created_at
+        }
+      })
       
       console.log('🔍 ADMIN ACTIVITIES DEBUG - Transformed activities:', transformedActivities)
       
@@ -161,6 +260,7 @@ export default function ActivitiesAdminEnhanced() {
         description_en: formData.description_en,
         description_ar: formData.description_ar,
         image_url: formData.images.length > 0 ? formData.images[0] : null,
+        gallery_images: formData.images, // Send all images as gallery
         video_url: null, // Can be extended later
         date: formData.date,
         is_active: formData.status === 'published'
@@ -227,7 +327,6 @@ export default function ActivitiesAdminEnhanced() {
     setFormData({
       title_en: activity.title_en,
       title_ar: activity.title_ar,
-      title_ar: activity.title_ar,
       description_en: activity.description_en,
       description_ar: activity.description_ar,
       category: activity.category,
@@ -235,7 +334,7 @@ export default function ActivitiesAdminEnhanced() {
       time: activity.time,
       location: activity.location,
       capacity: activity.capacity,
-      images: activity.images,
+      images: activity.images.filter(img => img && img !== '/placeholder.jpg'),
       status: activity.status
     })
     setEditingActivity(activity)
@@ -558,28 +657,22 @@ export default function ActivitiesAdminEnhanced() {
           return (
             <Card key={activity.id} className="group hover:shadow-lg transition-all duration-300 overflow-hidden">
               <CardHeader className="p-0">
-                {activity.images.length > 0 && (
-                  <div className="relative h-48 overflow-hidden">
-                    <img
-                      src={activity.images[0]}
-                      alt={activity.title_en}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                    />
-                    <div className="absolute top-3 left-3">
-                      <Badge className={`${categoryInfo.color} text-white`}>
-                        {categoryInfo.icon} {categoryInfo.label}
-                      </Badge>
-                    </div>
-                    <div className="absolute top-3 right-3">
-                      <Badge 
-                        variant={activity.status === 'published' ? 'default' : 'secondary'}
-                        className={activity.status === 'published' ? 'bg-green-500' : ''}
-                      >
-                        {activity.status}
-                      </Badge>
-                    </div>
+                <div className="relative h-48 overflow-hidden bg-gradient-to-br from-gray-100 to-gray-200">
+                  <ActivityImageCarousel images={activity.images} title={activity.title_en} />
+                  <div className="absolute top-3 left-3 z-10">
+                    <Badge className={`${categoryInfo.color} text-white`}>
+                      {categoryInfo.icon} {categoryInfo.label}
+                    </Badge>
                   </div>
-                )}
+                  <div className="absolute top-3 right-3">
+                    <Badge 
+                      variant={activity.status === 'published' ? 'default' : 'secondary'}
+                      className={activity.status === 'published' ? 'bg-green-500' : ''}
+                    >
+                      {activity.status}
+                    </Badge>
+                  </div>
+                </div>
               </CardHeader>
               
               <CardContent className="p-4">

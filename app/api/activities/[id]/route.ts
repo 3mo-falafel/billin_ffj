@@ -45,6 +45,7 @@ export async function PUT(
       description_en,
       description_ar,
       image_url,
+      gallery_images,
       video_url,
       date,
       is_active
@@ -58,13 +59,18 @@ export async function PUT(
       )
     }
     
+    // Handle gallery_images - use first image as main image_url for backward compatibility
+    const images = gallery_images || (image_url ? [image_url] : [])
+    const mainImageUrl = images.length > 0 ? images[0] : null
+    
     const db = createClient()
     const result = await db.from('activities').update({
       title_en,
       title_ar,
       description_en,
       description_ar,
-      image_url: image_url || null,
+      image_url: mainImageUrl,
+      gallery_images: JSON.stringify(images),
       video_url: video_url || null,
       date,
       is_active: is_active !== undefined ? is_active : true

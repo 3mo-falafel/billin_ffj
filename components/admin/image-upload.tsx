@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { Upload, X, Image as ImageIcon, Eye, Loader2 } from 'lucide-react'
 import { Button } from '../ui/button'
 
@@ -29,6 +29,11 @@ export default function ImageUpload({
   const [uploadProgress, setUploadProgress] = useState<string>('')
   const [previewImage, setPreviewImage] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  // Sync images state when existingImages prop changes
+  useEffect(() => {
+    setImages(existingImages)
+  }, [existingImages])
 
   const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(event.target.files || [])
@@ -159,6 +164,11 @@ export default function ImageUpload({
                   src={image}
                   alt={`Upload ${index + 1}`}
                   className="w-full h-full object-cover"
+                  onError={(e) => {
+                    const target = e.target as HTMLImageElement;
+                    target.onerror = null;
+                    target.src = '/placeholder.jpg';
+                  }}
                 />
               </div>
               

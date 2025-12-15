@@ -64,7 +64,16 @@ export default async function ActivityDetailPage({ params }: ActivityDetailPageP
               {activity.image_url && (
                 <div className="space-y-2">
                   <div className="flex items-center gap-2 text-sm font-medium text-palestinian-green"><ImageIcon className="w-4 h-4" /> Image</div>
-                  <img src={activity.image_url} alt={activity.title_en} className="w-full rounded object-cover" />
+                  <img 
+                    src={activity.image_url} 
+                    alt={activity.title_en} 
+                    className="w-full rounded object-cover"
+                    onError={(e) => {
+                      const target = e.target as HTMLImageElement;
+                      target.onerror = null;
+                      target.src = '/placeholder.jpg';
+                    }}
+                  />
                 </div>
               )}
               {activity.video_url && (

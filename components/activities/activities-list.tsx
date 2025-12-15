@@ -5,8 +5,34 @@ import { useRouter } from "next/navigation"
 import Image from "next/image"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { CalendarIcon, MapPinIcon, UsersIcon } from "lucide-react"
+import { CalendarIcon, MapPinIcon, UsersIcon, ChevronLeft, ChevronRight } from "lucide-react"
 import { useLanguage } from "@/hooks/use-language"
+
+// Fallback image component for handling broken images
+function ActivityImage({ src, alt, ...props }: { src: string; alt: string; fill?: boolean; className?: string; sizes?: string; loading?: "lazy" | "eager" }) {
+  const [imgSrc, setImgSrc] = useState(src)
+  const [hasError, setHasError] = useState(false)
+  
+  // Reset error state when src changes
+  useEffect(() => {
+    setImgSrc(src)
+    setHasError(false)
+  }, [src])
+  
+  return (
+    <Image 
+      {...props}
+      src={hasError ? '/placeholder.jpg' : imgSrc}
+      alt={alt}
+      onError={() => {
+        if (!hasError) {
+          setHasError(true)
+          setImgSrc('/placeholder.jpg')
+        }
+      }}
+    />
+  )
+}
 
 interface Activity {
   id: string
@@ -20,8 +46,64 @@ interface Activity {
   date: string
   participants?: number
   image_url?: string
+  gallery_images?: string[]
   is_featured: boolean
   created_at: string
+}
+
+// Image Carousel Component for Activity Cards
+function ActivityImageCarousel({ images, title }: { images: string[], title: string }) {
+  const [currentIndex, setCurrentIndex] = useState(0)
+  
+  const goToPrevious = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    setCurrentIndex(prev => (prev === 0 ? images.length - 1 : prev - 1))
+  }
+  
+  const goToNext = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    setCurrentIndex(prev => (prev === images.length - 1 ? 0 : prev + 1))
+  }
+  
+  if (images.length === 0) {
+    return null
+  }
+  
+  return (
+    <div className="relative w-full h-full group">
+      <ActivityImage
+        src={images[currentIndex]}
+        alt={`${title} - Image ${currentIndex + 1}`}
+        fill
+        className="object-cover"
+        sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+        loading="lazy"
+      />
+      
+      {/* Navigation arrows - only show if more than 1 image */}
+      {images.length > 1 && (
+        <>
+          <button
+            onClick={goToPrevious}
+            className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white rounded-full p-1 transition-all opacity-0 group-hover:opacity-100 z-10"
+          >
+            <ChevronLeft className="w-4 h-4" />
+          </button>
+          <button
+            onClick={goToNext}
+            className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white rounded-full p-1 transition-all opacity-0 group-hover:opacity-100 z-10"
+          >
+            <ChevronRight className="w-4 h-4" />
+          </button>
+          
+          {/* Image counter */}
+          <div className="absolute bottom-2 left-1/2 -translate-x-1/2 bg-black/50 text-white text-xs px-2 py-1 rounded-full z-10">
+            {currentIndex + 1} / {images.length}
+          </div>
+        </>
+      )}
+    </div>
+  )
 }
 
 export function ActivitiesList() {
@@ -52,21 +134,38 @@ export function ActivitiesList() {
       // Our API returns { data: [...] } format, not { success: true, data: [...] }
       if (result.data) {
         // Transform the database data to match expected interface
-        const transformedActivities = result.data.map((activity: any) => ({
-          id: activity.id,
-          title_en: activity.title_en,
-          title_ar: activity.title_ar,
-          description_en: activity.description_en,
-          description_ar: activity.description_ar,
-          category: 'community', // Default category since DB doesn't have this field
-          location_en: 'Bil\'in Village', // Default location
-          location_ar: 'قرية بلعين', // Default location in Arabic
-          date: activity.date,
-          participants: 50, // Default participants
-          image_url: activity.image_url,
-          is_featured: false, // Default to false since DB doesn't have this field
-          created_at: activity.created_at
-        }))
+        const transformedActivities = result.data.map((activity: any) => {
+          // Parse gallery_images - could be JSON string or array
+          let images: string[] = []
+          if (activity.gallery_images) {
+            try {
+              images = typeof activity.gallery_images === 'string' 
+                ? JSON.parse(activity.gallery_images) 
+                : activity.gallery_images
+            } catch {
+              images = activity.image_url ? [activity.image_url] : []
+            }
+          } else if (activity.image_url) {
+            images = [activity.image_url]
+          }
+          
+          return {
+            id: activity.id,
+            title_en: activity.title_en,
+            title_ar: activity.title_ar,
+            description_en: activity.description_en,
+            description_ar: activity.description_ar,
+            category: 'community', // Default category since DB doesn't have this field
+            location_en: 'Bil\'in Village', // Default location
+            location_ar: 'قرية بلعين', // Default location in Arabic
+            date: activity.date,
+            participants: 50, // Default participants
+            image_url: activity.image_url,
+            gallery_images: images,
+            is_featured: false, // Default to false since DB doesn't have this field
+            created_at: activity.created_at
+          }
+        })
         
         console.log('🔍 ACTIVITIES LIST DEBUG - Transformed activities:', transformedActivities)
         setActivities(transformedActivities)
@@ -139,15 +238,11 @@ export function ActivitiesList() {
                   className="hover:shadow-lg transition-shadow cursor-pointer"
                   onClick={() => router.push(`/activities/${activity.id}`)}
                 >
-                  {activity.image_url && (
+                  {(activity.gallery_images?.length || activity.image_url) && (
                     <div className="aspect-video bg-gray-200 rounded-t-lg overflow-hidden relative">
-                      <Image 
-                        src={activity.image_url} 
-                        alt={language === 'ar' ? activity.title_ar : activity.title_en}
-                        fill
-                        className="object-cover"
-                        sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                        loading="lazy"
+                      <ActivityImageCarousel
+                        images={activity.gallery_images?.length ? activity.gallery_images : (activity.image_url ? [activity.image_url] : [])}
+                        title={language === 'ar' ? activity.title_ar : activity.title_en}
                       />
                     </div>
                   )}
@@ -213,15 +308,11 @@ export function ActivitiesList() {
                   className="hover:shadow-md transition-shadow cursor-pointer"
                   onClick={() => router.push(`/activities/${activity.id}`)}
                 >
-                  {activity.image_url && (
+                  {(activity.gallery_images?.length || activity.image_url) && (
                     <div className="aspect-video bg-gray-200 rounded-t-lg overflow-hidden relative">
-                      <Image 
-                        src={activity.image_url} 
-                        alt={language === 'ar' ? activity.title_ar : activity.title_en}
-                        fill
-                        className="object-cover"
-                        sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                        loading="lazy"
+                      <ActivityImageCarousel
+                        images={activity.gallery_images?.length ? activity.gallery_images : (activity.image_url ? [activity.image_url] : [])}
+                        title={language === 'ar' ? activity.title_ar : activity.title_en}
                       />
                     </div>
                   )}

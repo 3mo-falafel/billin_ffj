@@ -6,8 +6,34 @@ import Image from "next/image"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { CalendarIcon, MapPinIcon, UsersIcon, ArrowLeftIcon, ImageIcon } from "lucide-react"
+import { CalendarIcon, MapPinIcon, UsersIcon, ArrowLeftIcon, ImageIcon, ChevronLeftIcon, ChevronRightIcon } from "lucide-react"
 import { useLanguage } from "@/hooks/use-language"
+
+// Fallback image component for handling broken images
+function ActivityImage({ src, alt, ...props }: { src: string; alt: string; fill?: boolean; className?: string; sizes?: string; priority?: boolean }) {
+  const [imgSrc, setImgSrc] = useState(src)
+  const [hasError, setHasError] = useState(false)
+  
+  // Reset error state when src changes
+  useEffect(() => {
+    setImgSrc(src)
+    setHasError(false)
+  }, [src])
+  
+  return (
+    <Image 
+      {...props}
+      src={hasError ? '/placeholder.jpg' : imgSrc}
+      alt={alt}
+      onError={() => {
+        if (!hasError) {
+          setHasError(true)
+          setImgSrc('/placeholder.jpg')
+        }
+      }}
+    />
+  )
+}
 
 interface Activity {
   id: string
@@ -16,10 +42,93 @@ interface Activity {
   description_en: string
   description_ar: string
   image_url?: string
+  gallery_images?: string[]
   video_url?: string
   date: string
   is_active: boolean
   created_at: string
+}
+
+// Image Gallery Carousel Component
+function ImageGallery({ images, title }: { images: string[]; title: string }) {
+  const [currentIndex, setCurrentIndex] = useState(0)
+  const [imageErrors, setImageErrors] = useState<Set<number>>(new Set())
+  
+  if (images.length === 0) return null
+  
+  const nextImage = () => {
+    setCurrentIndex((prev) => (prev + 1) % images.length)
+  }
+  
+  const prevImage = () => {
+    setCurrentIndex((prev) => (prev - 1 + images.length) % images.length)
+  }
+  
+  const handleImageError = (index: number) => {
+    setImageErrors((prev) => new Set(prev).add(index))
+  }
+  
+  const getCurrentSrc = () => {
+    return imageErrors.has(currentIndex) ? '/placeholder.jpg' : images[currentIndex]
+  }
+  
+  return (
+    <div className="relative aspect-video bg-gray-200 rounded-t-lg overflow-hidden group">
+      <Image 
+        src={getCurrentSrc()}
+        alt={`${title} - Image ${currentIndex + 1}`}
+        fill
+        className="object-cover"
+        sizes="(max-width: 768px) 100vw, 80vw"
+        priority
+        onError={() => handleImageError(currentIndex)}
+      />
+      
+      {/* Navigation Controls */}
+      {images.length > 1 && (
+        <>
+          {/* Previous Button */}
+          <button
+            onClick={prevImage}
+            className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/60 hover:bg-black/80 text-white p-3 rounded-full opacity-0 group-hover:opacity-100 transition-opacity z-10"
+            aria-label="Previous image"
+          >
+            <ChevronLeftIcon className="w-6 h-6" />
+          </button>
+          
+          {/* Next Button */}
+          <button
+            onClick={nextImage}
+            className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/60 hover:bg-black/80 text-white p-3 rounded-full opacity-0 group-hover:opacity-100 transition-opacity z-10"
+            aria-label="Next image"
+          >
+            <ChevronRightIcon className="w-6 h-6" />
+          </button>
+          
+          {/* Image Counter */}
+          <div className="absolute top-3 right-3 bg-black/60 text-white text-sm px-3 py-1 rounded-full">
+            {currentIndex + 1} / {images.length}
+          </div>
+          
+          {/* Dot Indicators */}
+          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2 z-10">
+            {images.map((_, idx) => (
+              <button
+                key={idx}
+                onClick={() => setCurrentIndex(idx)}
+                className={`w-3 h-3 rounded-full transition-all ${
+                  idx === currentIndex 
+                    ? 'bg-white scale-110' 
+                    : 'bg-white/50 hover:bg-white/70'
+                }`}
+                aria-label={`Go to image ${idx + 1}`}
+              />
+            ))}
+          </div>
+        </>
+      )}
+    </div>
+  )
 }
 
 interface ActivityDetailProps {
@@ -55,7 +164,26 @@ export function ActivityDetail({ activityId }: ActivityDetailProps) {
       console.log('🔍 ACTIVITY DETAIL - API response:', result)
       
       if (result.data) {
-        setActivity(result.data)
+        // Parse gallery_images if it's a JSON string
+        const activityData = result.data
+        if (activityData.gallery_images) {
+          if (typeof activityData.gallery_images === 'string') {
+            try {
+              activityData.gallery_images = JSON.parse(activityData.gallery_images)
+            } catch {
+              activityData.gallery_images = []
+            }
+          }
+        } else {
+          activityData.gallery_images = []
+        }
+        
+        // If no gallery_images but has image_url, create array from single image
+        if (activityData.gallery_images.length === 0 && activityData.image_url) {
+          activityData.gallery_images = [activityData.image_url]
+        }
+        
+        setActivity(activityData)
       } else if (result.error) {
         setError(result.error)
       } else {
@@ -114,18 +242,9 @@ export function ActivityDetail({ activityId }: ActivityDetailProps) {
 
         <div className="max-w-5xl mx-auto">
           <Card>
-            {/* Hero Image */}
-            {activity.image_url && (
-              <div className="aspect-video bg-gray-200 rounded-t-lg overflow-hidden relative">
-                <Image 
-                  src={activity.image_url} 
-                  alt={title}
-                  fill
-                  className="object-cover"
-                  sizes="(max-width: 768px) 100vw, 80vw"
-                  priority
-                />
-              </div>
+            {/* Image Gallery */}
+            {activity.gallery_images && activity.gallery_images.length > 0 && (
+              <ImageGallery images={activity.gallery_images} title={title} />
             )}
 
             <CardHeader>
