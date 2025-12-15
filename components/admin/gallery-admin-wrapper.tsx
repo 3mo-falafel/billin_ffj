@@ -107,14 +107,20 @@ export default function GalleryAdminWrapper() {
   const loadData = async () => {
     try {
       setIsLoading(true)
+      console.log('📸 GalleryAdminWrapper - Loading data...')
+      
       const { createClient } = await import('@/lib/api/client')
       const api = createClient()
       
       // Load photo albums with thumbnails (first image per album)
+      // Use active: false to get ALL items for admin management
       const { data: photoData, error: photoError, mode } = await api.gallery.getAll({ 
         media_type: 'image',
-        with_thumbnails: true  // Get albums with first image as thumbnail
+        with_thumbnails: true,  // Get albums with first image as thumbnail
+        active: false  // Get ALL items including inactive for admin
       }) as { data: any; error: any; mode?: string }
+      
+      console.log('📸 GalleryAdminWrapper - Photo response:', { photoData, photoError, mode })
       
       if (photoError) {
         console.error('Error loading photos:', photoError)
@@ -130,11 +136,42 @@ export default function GalleryAdminWrapper() {
           category: item.category || 'general',
           created_at: item.created_at
         }))
+        console.log('📸 GalleryAdminWrapper - Albums created:', albums.length, albums)
+        setPhotoAlbums(albums)
+      } else if (photoData && !mode) {
+        // Fallback: data is raw items, group them manually
+        console.log('📸 GalleryAdminWrapper - Raw data, grouping manually:', photoData.length)
+        const albumMap = new Map<string, PhotoAlbum>()
+        
+        photoData.forEach((item: any) => {
+          const key = item.title_en || 'Untitled Album'
+          if (!albumMap.has(key)) {
+            albumMap.set(key, {
+              id: item.id,
+              title: item.title_en || 'Untitled Album',
+              title_en: item.title_en || 'Untitled Album',
+              location: 'Bil\'in, Palestine',
+              images: [],
+              thumbnail: item.media_url,
+              category: item.category || 'general',
+              created_at: item.created_at
+            })
+          }
+          if (item.media_url) {
+            albumMap.get(key)!.images.push(item.media_url)
+          }
+        })
+        
+        const albums = Array.from(albumMap.values())
+        console.log('📸 GalleryAdminWrapper - Manually grouped albums:', albums.length, albums)
         setPhotoAlbums(albums)
       }
 
-      // Load videos
-      const { data: videoData, error: videoError } = await api.gallery.getAll({ media_type: 'video' })
+      // Load videos - also with active: false for admin
+      const { data: videoData, error: videoError } = await api.gallery.getAll({ 
+        media_type: 'video',
+        active: false 
+      })
       
       if (videoError) {
         console.error('Error loading videos:', videoError)

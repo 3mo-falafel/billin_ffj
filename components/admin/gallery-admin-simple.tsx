@@ -102,11 +102,17 @@ function GalleryAdminSimple() {
 
   const loadData = async () => {
     try {
-      // Load photo albums
-      const photoResponse = await fetch('/api/gallery?media_type=image')
+      console.log('📸 Gallery Admin - Loading data...')
+      
+      // Load photo albums - use active=false to get ALL items for admin
+      const photoResponse = await fetch('/api/gallery?media_type=image&active=false')
+      console.log('📸 Gallery Admin - Photo response status:', photoResponse.status)
+      
       if (photoResponse.ok) {
         const photoResult = await photoResponse.json()
+        console.log('📸 Gallery Admin - Photo data received:', photoResult)
         const photoData = photoResult.data || []
+        console.log('📸 Gallery Admin - Number of photos:', photoData.length)
         
         // Group photos by title to create albums
         const albumMap = new Map<string, PhotoAlbum>()
@@ -128,16 +134,22 @@ function GalleryAdminSimple() {
           }
         })
         
-        setPhotoAlbums(Array.from(albumMap.values()))
+        const albums = Array.from(albumMap.values())
+        console.log('📸 Gallery Admin - Albums created:', albums.length, albums)
+        setPhotoAlbums(albums)
       } else {
         console.error('Error loading photos:', await photoResponse.text())
       }
 
-      // Load videos
-      const videoResponse = await fetch('/api/gallery?media_type=video')
+      // Load videos - use active=false to get ALL items for admin
+      const videoResponse = await fetch('/api/gallery?media_type=video&active=false')
+      console.log('📸 Gallery Admin - Video response status:', videoResponse.status)
+      
       if (videoResponse.ok) {
         const videoResult = await videoResponse.json()
+        console.log('📸 Gallery Admin - Video data received:', videoResult)
         const videoData = videoResult.data || []
+        console.log('📸 Gallery Admin - Number of videos:', videoData.length)
         
         const videoItems: VideoItem[] = videoData.map((item: any) => {
           // Extract cover image from description
