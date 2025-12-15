@@ -177,7 +177,7 @@ export async function processImage(
   const result: ProcessedImage = {
     filename: outputFilename,
     path: outputPath,
-    url: `/uploads/images/${outputFilename}`,
+    url: `/api/uploads/images/${outputFilename}`,
     size: processedSize,
     width: processedMetadata.width || 0,
     height: processedMetadata.height || 0,
@@ -205,7 +205,7 @@ export async function processImage(
     result.thumbnail = {
       filename: thumbnailFilename,
       path: thumbnailPath,
-      url: `/uploads/thumbnails/${thumbnailFilename}`,
+      url: `/api/uploads/thumbnails/${thumbnailFilename}`,
       size: thumbnailSize
     }
   }

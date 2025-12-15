@@ -23,6 +23,15 @@ const nextConfig = {
       }
     ],
   },
+  // Rewrite /uploads/* to /api/uploads/* to serve dynamically uploaded files
+  async rewrites() {
+    return [
+      {
+        source: '/uploads/:path*',
+        destination: '/api/uploads/:path*',
+      },
+    ]
+  },
   // TEMP: embed Supabase public env fallbacks so v0.app build doesn't fail if vars not injected.
   // Remove once environment variables are correctly set in the hosting platform.
   env: {
