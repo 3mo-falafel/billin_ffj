@@ -778,28 +778,35 @@ export default function GalleryAdminWrapper() {
                     
                     // Function to upload image to server with compression
                     const uploadImage = async (file: File): Promise<string> => {
-                      console.log('🔍 Compressing:', file.name, '- Original size:', (file.size / 1024 / 1024).toFixed(2), 'MB')
+                      console.log('🔍 Uploading:', file.name, '- Size:', (file.size / 1024 / 1024).toFixed(2), 'MB')
                       
                       const formData = new FormData()
                       formData.append('file', file)
                       formData.append('maxWidth', '1600')
                       formData.append('quality', '80')
                       formData.append('generateThumbnail', 'true')
-                      formData.append('maxFileSizeKB', '150') // Target max 150KB
+                      formData.append('maxFileSizeKB', '150')
 
                       const response = await fetch('/api/upload', {
                         method: 'POST',
                         body: formData
                       })
 
+                      const responseText = await response.text()
+                      console.log('🔍 Upload response status:', response.status, 'body:', responseText)
+                      
                       if (!response.ok) {
-                        const error = await response.json()
-                        throw new Error(error.error || 'Upload failed')
+                        let errorMsg = 'Upload failed'
+                        try {
+                          const errorData = JSON.parse(responseText)
+                          errorMsg = errorData.error || errorData.details || errorMsg
+                        } catch { }
+                        throw new Error(errorMsg)
                       }
 
-                      const result = await response.json()
+                      const result = JSON.parse(responseText)
                       const imageUrl = result.data?.url || result.url
-                      console.log('🔍 GALLERY ADMIN DEBUG - Uploaded:', file.name, '→', imageUrl, '- Final size:', (result.data?.size / 1024).toFixed(0), 'KB')
+                      console.log('🔍 GALLERY ADMIN DEBUG - Uploaded:', file.name, '→', imageUrl)
                       return imageUrl
                     }
                     
@@ -809,9 +816,9 @@ export default function GalleryAdminWrapper() {
                       console.log('🔍 GALLERY ADMIN DEBUG - All images uploaded successfully:', imageUrls.length)
                       // Replace images completely (not append)
                       setPhotoFormData(prev => ({ ...prev, images: imageUrls }))
-                    } catch (error) {
+                    } catch (error: any) {
                       console.error('🔍 GALLERY ADMIN DEBUG - Error uploading images:', error)
-                      alert('Failed to upload images. Please try again.')
+                      alert('Failed to upload images: ' + (error.message || 'Unknown error'))
                     }
                   }}
                 />
