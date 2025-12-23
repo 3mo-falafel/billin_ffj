@@ -12,6 +12,23 @@ export async function GET(request: NextRequest) {
     nodeVersion: process.version,
   }
 
+  // Check if Sharp is working
+  try {
+    const sharp = require('sharp')
+    diagnostics.sharpVersion = sharp.versions?.sharp || 'unknown'
+    diagnostics.sharpInstalled = true
+    
+    // Try a simple Sharp operation
+    const testBuffer = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==', 'base64')
+    const result = await sharp(testBuffer).metadata()
+    diagnostics.sharpWorking = true
+    diagnostics.sharpTestResult = result
+  } catch (error: any) {
+    diagnostics.sharpInstalled = false
+    diagnostics.sharpError = error.message
+    diagnostics.sharpWorking = false
+  }
+
   const uploadDir = path.join(process.cwd(), 'public', 'uploads')
   const imagesDir = path.join(uploadDir, 'images')
   const publicDir = path.join(process.cwd(), 'public')

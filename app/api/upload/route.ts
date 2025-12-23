@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { processImage, validateImageFile } from '@/lib/utils/image-processor'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -10,6 +9,20 @@ export async function POST(request: NextRequest) {
   console.log('📤 Upload API - Request received')
   
   try {
+    // Dynamically import to catch Sharp errors early
+    let processImage, validateImageFile
+    try {
+      const imageProcessor = await import('@/lib/utils/image-processor')
+      processImage = imageProcessor.processImage
+      validateImageFile = imageProcessor.validateImageFile
+    } catch (importError: any) {
+      console.error('📤 Upload API - Failed to import image processor:', importError)
+      return NextResponse.json(
+        { error: 'Image processing not available', details: importError.message },
+        { status: 500 }
+      )
+    }
+    
     const formData = await request.formData()
     const file = formData.get('file') as File
     
