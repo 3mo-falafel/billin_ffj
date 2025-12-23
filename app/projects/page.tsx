@@ -126,13 +126,13 @@ export default function ProjectsPage() {
       <NewsTicker />
       
       {/* Hero Section */}
-      <section className="bg-gradient-to-r from-green-600 via-emerald-600 to-teal-600 text-white py-16">
+      <section className="bg-gradient-to-r from-green-600 via-emerald-600 to-teal-600 text-white py-10 sm:py-16">
         <div className="container mx-auto px-4 text-center">
-          <Target className="w-16 h-16 mx-auto mb-6" />
-          <h1 className="text-4xl md:text-6xl font-bold mb-6">
+          <Target className="w-12 h-12 sm:w-16 sm:h-16 mx-auto mb-4 sm:mb-6" />
+          <h1 className="text-2xl sm:text-4xl md:text-5xl lg:text-6xl font-bold mb-4 sm:mb-6">
             {language === 'ar' ? 'مشاريع القرية' : 'Village Projects'}
           </h1>
-          <p className="text-xl md:text-2xl max-w-4xl mx-auto leading-relaxed">
+          <p className="text-base sm:text-xl md:text-2xl max-w-4xl mx-auto leading-relaxed px-2">
             {language === 'ar'
               ? 'مشاريع تنموية لتحسين حياة أهالي بلعين وبناء مستقبل أفضل لأطفالنا'
               : 'Development projects to improve the lives of Bil\'in residents and build a better future for our children'
@@ -142,14 +142,14 @@ export default function ProjectsPage() {
       </section>
 
       {/* Main Content */}
-      <div className="container mx-auto px-4 py-12">
+      <div className="container mx-auto px-3 sm:px-4 py-8 sm:py-12">
         {/* Featured Projects */}
-        <div className="mb-12">
-          <h2 className="text-3xl font-bold text-center mb-8 text-gray-900 dark:text-white">
+        <div className="mb-8 sm:mb-12">
+          <h2 className="text-2xl sm:text-3xl font-bold text-center mb-6 sm:mb-8 text-gray-900 dark:text-white">
             {language === 'ar' ? 'المشاريع المميزة' : 'Featured Projects'}
           </h2>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8">
             {projects.filter(p => p.is_featured).map((project) => {
               const progressPercentage = project.goal_amount > 0 
                 ? (project.raised_amount / project.goal_amount) * 100 
@@ -159,7 +159,7 @@ export default function ProjectsPage() {
                 <Card key={project.id} className="hover:shadow-xl transition-all duration-300 hover:-translate-y-1 cursor-pointer overflow-hidden"
                       onClick={() => setSelectedProject(project)}>
                   <CardHeader className="p-0">
-                    <div className="relative h-56 overflow-hidden">
+                    <div className="relative h-40 sm:h-48 md:h-56 overflow-hidden">
                       {project.images && Array.isArray(project.images) && project.images.length > 0 ? (
                         <img
                           src={project.images[0]}
@@ -193,52 +193,52 @@ export default function ProjectsPage() {
                     </div>
                   </CardHeader>
                   
-                  <CardContent className="p-6 space-y-4">
+                  <CardContent className="p-4 sm:p-6 space-y-3 sm:space-y-4">
                     <div>
-                      <h3 className="font-bold text-xl text-gray-900 dark:text-white mb-2">
+                      <h3 className="font-bold text-lg sm:text-xl text-gray-900 dark:text-white mb-2">
                         {project.name}
                       </h3>
-                      <div className="flex items-center gap-2 text-sm text-gray-500 mb-3">
-                        <MapPin className="w-4 h-4" />
+                      <div className="flex items-center gap-2 text-xs sm:text-sm text-gray-500 mb-2 sm:mb-3">
+                        <MapPin className="w-3 h-3 sm:w-4 sm:h-4" />
                         {project.location}
                       </div>
-                      <p className="text-gray-600 dark:text-gray-400 line-clamp-3">
+                      <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400 line-clamp-2 sm:line-clamp-3">
                         {project.description}
                       </p>
                     </div>
 
                     {/* Fundraising Progress */}
-                    <div className="bg-green-50 p-4 rounded-lg">
-                      <div className="flex justify-between items-center mb-2">
-                        <span className="text-sm font-medium">
+                    <div className="bg-green-50 p-3 sm:p-4 rounded-lg">
+                      <div className="flex justify-between items-center mb-1 sm:mb-2">
+                        <span className="text-xs sm:text-sm font-medium">
                           {language === 'ar' ? 'الهدف:' : 'Goal:'}
                         </span>
-                        <span className="text-green-600 font-bold">
+                        <span className="text-green-600 font-bold text-sm sm:text-base">
                           ${project.goal_amount.toLocaleString()}
                         </span>
                       </div>
-                      <div className="flex justify-between items-center mb-3">
-                        <span className="text-sm font-medium">
+                      <div className="flex justify-between items-center mb-2 sm:mb-3">
+                        <span className="text-xs sm:text-sm font-medium">
                           {language === 'ar' ? 'تم جمعه:' : 'Raised:'}
                         </span>
-                        <span className="text-blue-600 font-bold">
+                        <span className="text-blue-600 font-bold text-sm sm:text-base">
                           ${project.raised_amount.toLocaleString()}
                         </span>
                       </div>
-                      <div className="bg-gray-200 rounded-full h-3">
+                      <div className="bg-gray-200 rounded-full h-2 sm:h-3">
                         <div 
-                          className="bg-green-500 h-3 rounded-full transition-all duration-500"
+                          className="bg-green-500 h-2 sm:h-3 rounded-full transition-all duration-500"
                           style={{ width: `${Math.min(progressPercentage, 100)}%` }}
                         />
                       </div>
-                      <p className="text-xs text-gray-600 mt-2 text-center">
+                      <p className="text-xs text-gray-600 mt-1.5 sm:mt-2 text-center">
                         {Math.round(progressPercentage)}% {language === 'ar' ? 'مكتمل' : 'completed'}
                       </p>
                     </div>
 
-                    <Button size="lg" className="w-full bg-green-500 hover:bg-green-600" asChild>
-                      <Link href="/donate-projects">
-                        <DollarSign className="w-5 h-5 mr-2" />
+                    <Button size="lg" className="w-full bg-green-500 hover:bg-green-600 text-sm sm:text-base h-10 sm:h-12" asChild>
+                      <Link href="/donate">
+                        <DollarSign className="w-4 h-4 sm:w-5 sm:h-5 mr-1.5 sm:mr-2" />
                         {language === 'ar' ? 'تبرع للمشروع' : 'Donate to Project'}
                       </Link>
                     </Button>
@@ -350,7 +350,7 @@ export default function ProjectsPage() {
               : 'Help us build a better future for Bil\'in village by supporting our development projects'
             }
           </p>
-          <Link href="/donate-projects">
+          <Link href="/donate">
             <Button size="lg" className="bg-white text-green-600 hover:bg-green-50 px-10 py-4 text-xl font-semibold">
               <Heart className="w-6 h-6 mr-3" />
               {language === 'ar' ? 'تبرع الآن' : 'Donate Now'}
@@ -498,7 +498,7 @@ export default function ProjectsPage() {
 
               {/* Donate Button */}
               <Button size="lg" className="w-full bg-green-500 hover:bg-green-600 text-lg py-4" asChild>
-                <Link href="/donate-projects">
+                <Link href="/donate">
                   <DollarSign className="w-6 h-6 mr-3" />
                   {language === 'ar' ? 'تبرع لهذا المشروع' : 'Donate to This Project'}
                 </Link>

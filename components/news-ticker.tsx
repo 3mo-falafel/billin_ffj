@@ -135,12 +135,15 @@ export function NewsTicker() {
         <div className="flex-1 relative overflow-hidden">
           <div className="absolute inset-0 bg-white/90 backdrop-blur-sm"></div>
           <div 
-            className={`relative whitespace-nowrap animate-scroll text-gray-900 font-medium text-sm py-2 px-4 ${
-              isArabic ? 'arabic-text scroll-rtl' : 'english-text scroll-ltr'
-            }`}
+            className={`ticker-wrapper ${isArabic ? 'ticker-rtl' : 'ticker-ltr'}`}
             dir={tickerDirection}
           >
-            {combinedNews}
+            <div className={`ticker-content text-gray-900 font-medium text-sm ${isArabic ? 'arabic-text' : 'english-text'}`}>
+              <span>{combinedNews}</span>
+              <span className="ticker-separator">•</span>
+              <span>{combinedNews}</span>
+              <span className="ticker-separator">•</span>
+            </div>
           </div>
         </div>
 

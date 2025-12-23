@@ -48,22 +48,22 @@ export default function DonatePage() {
       <NewsTicker />
 
       {/* Hero Section */}
-      <section className="bg-gradient-to-b from-primary/10 to-background py-16">
+      <section className="bg-gradient-to-b from-primary/10 to-background py-10 sm:py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <Heart className="w-16 h-16 text-primary mx-auto mb-6" />
-          <h1 className="text-4xl md:text-5xl font-bold text-foreground mb-4">
+          <Heart className="w-12 h-12 sm:w-16 sm:h-16 text-primary mx-auto mb-4 sm:mb-6" />
+          <h1 className="text-2xl sm:text-4xl md:text-5xl font-bold text-foreground mb-3 sm:mb-4">
             {getTranslation("supportOurCause", language)}
           </h1>
-          <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
+          <p className="text-base sm:text-xl text-muted-foreground max-w-3xl mx-auto px-2">
             {getTranslation("donationDescription", language)}
           </p>
         </div>
       </section>
 
       {/* Donation Section */}
-      <section className="py-16">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+      <section className="py-10 sm:py-16">
+        <div className="max-w-6xl mx-auto px-3 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8 lg:gap-12">
             {/* Bank Transfer Information */}
             <div className="space-y-6">
               <Card>

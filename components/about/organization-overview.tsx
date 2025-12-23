@@ -67,37 +67,37 @@ export function OrganizationOverview() {
   }
 
   return (
-    <section className="relative py-20 bg-gradient-to-br from-background via-muted/20 to-primary/5 overflow-hidden">
+    <section className="relative py-12 sm:py-16 md:py-20 bg-gradient-to-br from-background via-muted/20 to-primary/5 overflow-hidden">
       {/* Decorative background elements */}
       <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute top-20 left-10 w-32 h-32 bg-primary/10 rounded-full blur-3xl" />
-        <div className="absolute bottom-20 right-10 w-40 h-40 bg-secondary/10 rounded-full blur-3xl" />
-        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-accent/5 rounded-full blur-3xl" />
+        <div className="absolute top-20 left-10 w-24 sm:w-32 h-24 sm:h-32 bg-primary/10 rounded-full blur-3xl" />
+        <div className="absolute bottom-20 right-10 w-32 sm:w-40 h-32 sm:h-40 bg-secondary/10 rounded-full blur-3xl" />
+        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-64 sm:w-96 h-64 sm:h-96 bg-accent/5 rounded-full blur-3xl" />
       </div>
 
       <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         {/* Header Section */}
-        <div className={`text-center mb-16 ${isArabic ? "arabic-text" : "english-text"}`}>
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-primary/10 rounded-2xl mb-6">
-            <Heart className="w-8 h-8 text-primary" />
+        <div className={`text-center mb-10 sm:mb-16 ${isArabic ? "arabic-text" : "english-text"}`}>
+          <div className="inline-flex items-center justify-center w-12 h-12 sm:w-16 sm:h-16 bg-primary/10 rounded-xl sm:rounded-2xl mb-4 sm:mb-6">
+            <Heart className="w-6 h-6 sm:w-8 sm:h-8 text-primary" />
           </div>
-          <h2 className="text-4xl md:text-5xl font-bold text-foreground tracking-tight mb-6">
+          <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-foreground tracking-tight mb-4 sm:mb-6">
             {language === "en" ? "Who We Are" : "من نحن"}
           </h2>
-          <p className="mx-auto max-w-3xl text-muted-foreground text-xl leading-relaxed">
+          <p className="mx-auto max-w-3xl text-muted-foreground text-base sm:text-lg lg:text-xl leading-relaxed px-2">
             {content[language].subtitle}
           </p>
         </div>
 
         {/* Main Content Grid */}
-        <div className="grid lg:grid-cols-2 gap-16 items-center mb-16">
+        <div className="grid lg:grid-cols-2 gap-8 sm:gap-12 lg:gap-16 items-center mb-10 sm:mb-16">
           {/* Content Side */}
-          <div className={`space-y-8 ${isArabic ? "arabic-text lg:order-2" : "english-text"}`}>
-            <div className="space-y-6">
-              <p className="text-lg text-muted-foreground leading-relaxed">
+          <div className={`space-y-6 sm:space-y-8 ${isArabic ? "arabic-text lg:order-2" : "english-text"}`}>
+            <div className="space-y-4 sm:space-y-6">
+              <p className="text-base sm:text-lg text-muted-foreground leading-relaxed">
                 {content[language].description}
               </p>
-              <p className="text-lg text-muted-foreground leading-relaxed">
+              <p className="text-base sm:text-lg text-muted-foreground leading-relaxed">
                 {content[language].mission}
               </p>
             </div>
