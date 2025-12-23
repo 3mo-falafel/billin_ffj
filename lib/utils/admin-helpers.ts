@@ -91,17 +91,16 @@ export const uploadImage = async (file: File): Promise<string> => {
   })
 }
 
-// Validate image file
+// Validate image file - accepts any image type, we'll compress it on the server
 export const validateImageFile = (file: File): boolean => {
-  const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp']
-  const maxSize = 5 * 1024 * 1024 // 5MB
+  const maxSize = 50 * 1024 * 1024 // 50MB - server will compress
   
-  if (!allowedTypes.includes(file.type)) {
-    throw new Error('Please select a valid image file (JPEG, PNG, GIF, or WebP)')
+  if (!file.type.startsWith('image/')) {
+    throw new Error('Please select an image file')
   }
   
   if (file.size > maxSize) {
-    throw new Error('Image file size must be less than 5MB')
+    throw new Error('Image file size must be less than 50MB')
   }
   
   return true
