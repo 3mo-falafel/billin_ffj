@@ -24,6 +24,7 @@ export function SaleForm({ initialData, isEditing = false }: SaleFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [imageFile, setImageFile] = useState<File | null>(null)
   const [imagePreview, setImagePreview] = useState<string>(initialData?.image_url || "")
+  const [uploadProgress, setUploadProgress] = useState<string>("")
   
   const [formData, setFormData] = useState({
     title_en: initialData?.title_en || "",
@@ -58,28 +59,37 @@ export function SaleForm({ initialData, isEditing = false }: SaleFormProps) {
     setImagePreview("")
   }
 
+  // Upload image with automatic compression to ~150KB
   const uploadImage = async (file: File): Promise<string | null> => {
     try {
-      const fileExt = file.name.split('.').pop()
-      const fileName = `sale-${Date.now()}.${fileExt}`
-      const filePath = `crafts/sale/${fileName}`
+      setUploadProgress(`Compressing and uploading ${file.name}...`)
+      
+      const formData = new FormData()
+      formData.append('file', file)
+      formData.append('maxWidth', '1200')
+      formData.append('quality', '80')
+      formData.append('generateThumbnail', 'true')
+      formData.append('maxFileSizeKB', '150') // Target max 150KB
 
-      const { error: uploadError } = await supabase.storage
-        .from('media')
-        .upload(filePath, file)
+      const response = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData
+      })
 
-      if (uploadError) {
-        console.error('Error uploading image:', uploadError)
-        return null
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.error || 'Upload failed')
       }
 
-      const { data } = supabase.storage
-        .from('media')
-        .getPublicUrl(filePath)
-
-      return data.publicUrl
+      const result = await response.json()
+      const imageUrl = result.data?.url || result.url
+      
+      setUploadProgress(`Compressed from ${(file.size / 1024).toFixed(0)}KB to ${(result.data?.size / 1024).toFixed(0)}KB`)
+      
+      return imageUrl
     } catch (error) {
       console.error('Upload error:', error)
+      setUploadProgress('')
       return null
     }
   }
@@ -158,6 +168,11 @@ export function SaleForm({ initialData, isEditing = false }: SaleFormProps) {
               >
                 <X className="w-4 h-4" />
               </Button>
+              {imageFile && (
+                <div className="absolute bottom-2 left-2 bg-black/70 text-white text-xs px-2 py-1 rounded">
+                  Original: {(imageFile.size / 1024 / 1024).toFixed(2)}MB → Will compress to ~150KB
+                </div>
+              )}
             </div>
           ) : (
             <div className="text-center">
@@ -168,7 +183,10 @@ export function SaleForm({ initialData, isEditing = false }: SaleFormProps) {
                     Click to upload product image
                   </div>
                   <div className="text-xs text-gray-500">
-                    PNG, JPG, WEBP up to 10MB
+                    Any image format - auto-compressed to ~150KB
+                  </div>
+                  <div className="text-xs text-green-600 font-medium mt-1">
+                    ✓ Large files (10MB+) automatically compressed
                   </div>
                 </Label>
                 <Input
@@ -179,6 +197,12 @@ export function SaleForm({ initialData, isEditing = false }: SaleFormProps) {
                   className="hidden"
                 />
               </div>
+            </div>
+          )}
+          {uploadProgress && (
+            <div className="mt-2 text-sm text-blue-600 flex items-center gap-2">
+              <Loader2 className="w-4 h-4 animate-spin" />
+              {uploadProgress}
             </div>
           )}
         </div>

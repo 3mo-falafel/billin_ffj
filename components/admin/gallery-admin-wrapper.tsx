@@ -774,15 +774,18 @@ export default function GalleryAdminWrapper() {
                     const files = Array.from(e.target.files || [])
                     if (files.length === 0) return
                     
-                    console.log('🔍 GALLERY ADMIN DEBUG - Starting image uploads...', files.length, 'files')
+                    console.log('🔍 GALLERY ADMIN DEBUG - Starting image uploads with compression...', files.length, 'files')
                     
-                    // Function to upload image to server
+                    // Function to upload image to server with compression
                     const uploadImage = async (file: File): Promise<string> => {
+                      console.log('🔍 Compressing:', file.name, '- Original size:', (file.size / 1024 / 1024).toFixed(2), 'MB')
+                      
                       const formData = new FormData()
                       formData.append('file', file)
                       formData.append('maxWidth', '1600')
                       formData.append('quality', '80')
                       formData.append('generateThumbnail', 'true')
+                      formData.append('maxFileSizeKB', '150') // Target max 150KB
 
                       const response = await fetch('/api/upload', {
                         method: 'POST',
@@ -796,7 +799,7 @@ export default function GalleryAdminWrapper() {
 
                       const result = await response.json()
                       const imageUrl = result.data?.url || result.url
-                      console.log('🔍 GALLERY ADMIN DEBUG - Uploaded image:', file.name, '→', imageUrl)
+                      console.log('🔍 GALLERY ADMIN DEBUG - Uploaded:', file.name, '→', imageUrl, '- Final size:', (result.data?.size / 1024).toFixed(0), 'KB')
                       return imageUrl
                     }
                     
@@ -812,7 +815,8 @@ export default function GalleryAdminWrapper() {
                     }
                   }}
                 />
-                <p className="text-sm text-muted-foreground">Select images for the album (replaces any previous selection)</p>
+                <p className="text-sm text-muted-foreground">Select images for the album (auto-compressed to ~150KB each)</p>
+                <p className="text-xs text-green-600">✓ Large files automatically compressed</p>
                 {photoFormData.images.length > 0 && (
                   <p className="text-sm text-green-600">✅ {photoFormData.images.length} image(s) ready to upload</p>
                 )}
@@ -1063,12 +1067,13 @@ export default function GalleryAdminWrapper() {
                         
                         const newImages: string[] = []
                         for (const file of Array.from(files)) {
-                          // Upload the image to server
+                          // Upload the image to server with compression
                           const formData = new FormData()
                           formData.append('file', file)
                           formData.append('maxWidth', '1600')
                           formData.append('quality', '80')
                           formData.append('generateThumbnail', 'true')
+                          formData.append('maxFileSizeKB', '150') // Target max 150KB
 
                           const response = await fetch('/api/upload', {
                             method: 'POST',

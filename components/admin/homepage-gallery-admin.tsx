@@ -114,23 +114,34 @@ export function AdminHomepageGallery() {
   }
 
   const handleFileUpload = async (file: File): Promise<string> => {
-    console.log('🔍 HOMEPAGE GALLERY DEBUG - Starting file upload process...')
+    console.log('🔍 HOMEPAGE GALLERY DEBUG - Starting file upload with compression...')
+    console.log('🔍 Original file size:', (file.size / 1024 / 1024).toFixed(2), 'MB')
     
-    // For now, create a data URL that can be stored in the database
-    // This is a temporary solution - in production you would upload to cloud storage
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader()
-      reader.onload = (e) => {
-        const dataUrl = e.target?.result as string
-        console.log('🔍 HOMEPAGE GALLERY DEBUG - File converted to data URL successfully')
-        resolve(dataUrl)
-      }
-      reader.onerror = (e) => {
-        console.error('🔍 HOMEPAGE GALLERY DEBUG - FileReader error:', e)
-        reject(new Error('Failed to read file'))
-      }
-      reader.readAsDataURL(file)
+    // Use the compression API to upload and compress the image
+    const formData = new FormData()
+    formData.append('file', file)
+    formData.append('maxWidth', '1200')
+    formData.append('quality', '80')
+    formData.append('generateThumbnail', 'true')
+    formData.append('maxFileSizeKB', '150') // Target max 150KB
+
+    const response = await fetch('/api/upload', {
+      method: 'POST',
+      body: formData
     })
+
+    if (!response.ok) {
+      const error = await response.json()
+      throw new Error(error.error || 'Upload failed')
+    }
+
+    const result = await response.json()
+    const imageUrl = result.data?.url || result.url
+    
+    console.log('🔍 HOMEPAGE GALLERY DEBUG - Compressed to:', (result.data?.size / 1024).toFixed(0), 'KB')
+    console.log('🔍 HOMEPAGE GALLERY DEBUG - Image URL:', imageUrl)
+    
+    return imageUrl
   }
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -142,11 +153,7 @@ export function AdminHomepageGallery() {
         return
       }
 
-      // Validate file size (5MB max)
-      if (file.size > 5 * 1024 * 1024) {
-        showAlert('error', 'File size must be less than 5MB')
-        return
-      }
+      // Allow large files - they will be compressed
 
       setImageFile(file)
       setImagePreview(URL.createObjectURL(file))

@@ -58,26 +58,23 @@ export default function ImageUpload({
     }
 
     setUploading(true)
-    setUploadProgress(`Uploading ${files.length} image(s)...`)
+    setUploadProgress(`Compressing and uploading ${files.length} image(s)...`)
 
     try {
       const uploadPromises = files.map(async (file, index) => {
-        // Validate file size and type
-        if (file.size > 10 * 1024 * 1024) {
-          throw new Error(`${file.name}: File too large (max 10MB)`)
-        }
-        
-        if (!file.type.match(/^image\/(jpeg|jpg|png|webp)$/)) {
-          throw new Error(`${file.name}: Invalid file type`)
+        // Allow any image type - we compress during processing
+        if (!file.type.startsWith('image/')) {
+          throw new Error(`${file.name}: Not an image file`)
         }
 
-        setUploadProgress(`Uploading ${index + 1}/${files.length}...`)
+        setUploadProgress(`Compressing ${index + 1}/${files.length}: ${file.name} (${(file.size / 1024 / 1024).toFixed(1)}MB)...`)
 
         const formData = new FormData()
         formData.append('file', file)
         formData.append('maxWidth', '1600')
         formData.append('quality', '80')
         formData.append('generateThumbnail', 'true')
+        formData.append('maxFileSizeKB', '150') // Target max 150KB
 
         const response = await fetch('/api/upload', {
           method: 'POST',
@@ -183,7 +180,7 @@ export default function ImageUpload({
       <input
         ref={fileInputRef}
         type="file"
-        accept="image/jpeg,image/jpg,image/png,image/webp"
+        accept="image/*"
         multiple
         onChange={handleFileSelect}
         className="hidden"
@@ -197,7 +194,8 @@ export default function ImageUpload({
           <ImageIcon className="w-12 h-12 text-gray-400 mx-auto mb-4" />
           <p className="text-gray-600 mb-2">Click to upload images</p>
           <p className="text-sm text-gray-400">or drag and drop files here</p>
-          <p className="text-xs text-gray-400 mt-2">JPEG, PNG, WebP • Max 10MB each</p>
+          <p className="text-xs text-gray-400 mt-2">Any image format • Auto-compressed to ~150KB</p>
+          <p className="text-xs text-green-600 font-medium mt-1">✓ Large files automatically compressed</p>
         </div>
       ) : (
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">

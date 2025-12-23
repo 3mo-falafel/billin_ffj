@@ -4,7 +4,7 @@ import { processImage, validateImageFile } from '@/lib/utils/image-processor'
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
-const MAX_FILE_SIZE = 10 * 1024 * 1024 // 10MB
+const MAX_FILE_SIZE = 50 * 1024 * 1024 // 50MB - We accept large files and compress them
 
 export async function POST(request: NextRequest) {
   console.log('📤 Upload API - Request received')
@@ -24,7 +24,8 @@ export async function POST(request: NextRequest) {
     console.log('📤 Upload API - File received:', {
       name: file.name,
       type: file.type,
-      size: file.size
+      size: file.size,
+      sizeMB: (file.size / 1024 / 1024).toFixed(2) + 'MB'
     })
 
     // Validate file
@@ -44,26 +45,30 @@ export async function POST(request: NextRequest) {
     // Convert File to Buffer
     const arrayBuffer = await file.arrayBuffer()
     const buffer = Buffer.from(arrayBuffer)
-    console.log('📤 Upload API - Buffer created, size:', buffer.length)
+    console.log('📤 Upload API - Buffer created, size:', buffer.length, 'bytes (' + (buffer.length / 1024 / 1024).toFixed(2) + 'MB)')
 
     // Get processing options from form data
     const maxWidth = parseInt(formData.get('maxWidth') as string) || 1600
     const quality = parseInt(formData.get('quality') as string) || 80
     const generateThumbnail = formData.get('generateThumbnail') !== 'false'
+    const maxFileSizeKB = parseInt(formData.get('maxFileSizeKB') as string) || 150 // Default 150KB max
 
-    console.log('📤 Upload API - Processing options:', { maxWidth, quality, generateThumbnail })
+    console.log('📤 Upload API - Processing options:', { maxWidth, quality, generateThumbnail, maxFileSizeKB })
 
-    // Process image
+    // Process image with compression
     const result = await processImage(buffer, file.name, {
       maxWidth,
       quality,
-      generateThumbnail
+      generateThumbnail,
+      maxFileSizeKB
     })
 
     console.log('📤 Upload API - Processing complete:', {
       url: result.url,
       filename: result.filename,
-      size: result.size
+      originalSize: (buffer.length / 1024).toFixed(0) + 'KB',
+      finalSize: (result.size / 1024).toFixed(0) + 'KB',
+      compression: ((1 - result.size / buffer.length) * 100).toFixed(1) + '%'
     })
 
     return NextResponse.json({

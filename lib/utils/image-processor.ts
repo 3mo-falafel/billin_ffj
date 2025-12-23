@@ -10,6 +10,7 @@ export interface ImageProcessingOptions {
   format?: 'webp' | 'jpeg' | 'png'
   generateThumbnail?: boolean
   thumbnailWidth?: number
+  maxFileSizeKB?: number // Target maximum file size in KB (for aggressive compression)
 }
 
 export interface ProcessedImage {
@@ -29,8 +30,21 @@ export interface ProcessedImage {
 }
 
 const UPLOAD_DIR = path.join(process.cwd(), 'public', 'uploads')
-const MAX_FILE_SIZE = 10 * 1024 * 1024 // 10MB
-const ALLOWED_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp']
+const MAX_FILE_SIZE = 50 * 1024 * 1024 // 50MB - Allow large files, we'll compress them
+// Allow all common image types
+const ALLOWED_TYPES = [
+  'image/jpeg', 
+  'image/jpg', 
+  'image/png', 
+  'image/webp',
+  'image/gif',
+  'image/bmp',
+  'image/tiff',
+  'image/svg+xml',
+  'image/heic',
+  'image/heif',
+  'image/avif'
+]
 
 /**
  * Ensure upload directories exist
@@ -69,10 +83,11 @@ export function validateImageFile(file: {
   mimetype: string
   size: number 
 }): { valid: boolean; error?: string } {
-  if (!ALLOWED_TYPES.includes(file.mimetype)) {
+  // Accept any image type - we'll convert it during processing
+  if (!file.mimetype.startsWith('image/')) {
     return {
       valid: false,
-      error: 'Invalid file type. Only JPEG, PNG, and WebP are allowed.'
+      error: 'Invalid file type. Only image files are allowed.'
     }
   }
 
@@ -102,6 +117,116 @@ export function generateUniqueFilename(originalName: string, buffer: Buffer): st
 }
 
 /**
+ * Compress image to target file size using iterative quality reduction
+ */
+async function compressToTargetSize(
+  buffer: Buffer,
+  targetSizeKB: number,
+  format: 'webp' | 'jpeg' | 'png',
+  maxWidth: number,
+  maxHeight: number
+): Promise<{ buffer: Buffer; quality: number; width: number; height: number }> {
+  const targetSizeBytes = targetSizeKB * 1024
+  let quality = 85 // Start with high quality
+  let currentWidth = maxWidth
+  let resultBuffer = buffer
+  let metadata = await sharp(buffer).metadata()
+  
+  // First pass: resize to max dimensions
+  let imageProcessor = sharp(buffer).rotate()
+  
+  if (metadata.width && metadata.width > maxWidth) {
+    imageProcessor = imageProcessor.resize(maxWidth, maxHeight, {
+      fit: 'inside',
+      withoutEnlargement: true
+    })
+  }
+  
+  // Apply format
+  if (format === 'webp') {
+    resultBuffer = await imageProcessor.webp({ quality }).toBuffer()
+  } else if (format === 'jpeg') {
+    resultBuffer = await imageProcessor.jpeg({ quality, mozjpeg: true }).toBuffer()
+  } else {
+    resultBuffer = await imageProcessor.png({ quality, compressionLevel: 9 }).toBuffer()
+  }
+  
+  // If already under target, return
+  if (resultBuffer.length <= targetSizeBytes) {
+    const finalMeta = await sharp(resultBuffer).metadata()
+    return { 
+      buffer: resultBuffer, 
+      quality, 
+      width: finalMeta.width || 0, 
+      height: finalMeta.height || 0 
+    }
+  }
+  
+  console.log(`📊 Initial size: ${(resultBuffer.length / 1024).toFixed(0)}KB, target: ${targetSizeKB}KB`)
+  
+  // Iteratively reduce quality until we hit target size
+  while (resultBuffer.length > targetSizeBytes && quality > 10) {
+    quality -= 10
+    
+    imageProcessor = sharp(buffer).rotate()
+    
+    // Also progressively reduce dimensions if quality alone isn't enough
+    if (quality <= 40 && currentWidth > 800) {
+      currentWidth = Math.max(800, currentWidth - 200)
+      imageProcessor = imageProcessor.resize(currentWidth, null, {
+        fit: 'inside',
+        withoutEnlargement: true
+      })
+    } else if (metadata.width && metadata.width > maxWidth) {
+      imageProcessor = imageProcessor.resize(maxWidth, maxHeight, {
+        fit: 'inside',
+        withoutEnlargement: true
+      })
+    }
+    
+    if (format === 'webp') {
+      resultBuffer = await imageProcessor.webp({ quality }).toBuffer()
+    } else if (format === 'jpeg') {
+      resultBuffer = await imageProcessor.jpeg({ quality, mozjpeg: true }).toBuffer()
+    } else {
+      resultBuffer = await imageProcessor.png({ quality, compressionLevel: 9 }).toBuffer()
+    }
+    
+    console.log(`📊 Quality ${quality}: ${(resultBuffer.length / 1024).toFixed(0)}KB`)
+  }
+  
+  // If still too large, do more aggressive resize
+  while (resultBuffer.length > targetSizeBytes && currentWidth > 400) {
+    currentWidth = Math.max(400, currentWidth - 100)
+    
+    imageProcessor = sharp(buffer)
+      .rotate()
+      .resize(currentWidth, null, {
+        fit: 'inside',
+        withoutEnlargement: true
+      })
+    
+    if (format === 'webp') {
+      resultBuffer = await imageProcessor.webp({ quality }).toBuffer()
+    } else if (format === 'jpeg') {
+      resultBuffer = await imageProcessor.jpeg({ quality, mozjpeg: true }).toBuffer()
+    } else {
+      resultBuffer = await imageProcessor.png({ quality, compressionLevel: 9 }).toBuffer()
+    }
+    
+    console.log(`📊 Resize ${currentWidth}px: ${(resultBuffer.length / 1024).toFixed(0)}KB`)
+  }
+  
+  const finalMeta = await sharp(resultBuffer).metadata()
+  return { 
+    buffer: resultBuffer, 
+    quality, 
+    width: finalMeta.width || 0, 
+    height: finalMeta.height || 0 
+  }
+}
+
+/**
  * Process and optimize image
  */
 export async function processImage(
@@ -117,7 +242,8 @@ export async function processImage(
     quality = 80,
     format = 'webp',
     generateThumbnail = true,
-    thumbnailWidth = 500
+    thumbnailWidth = 500,
+    maxFileSizeKB = 150 // Default target: 150KB max
   } = options
 
   await ensureUploadDirs()
@@ -133,29 +259,18 @@ export async function processImage(
   
   console.log(`📸 Processing image: ${originalFilename}`)
   console.log(`📊 Original: ${(buffer.length / 1024).toFixed(2)}KB, ${metadata.width}x${metadata.height}`)
+  console.log(`🎯 Target max size: ${maxFileSizeKB}KB`)
 
-  // Process main image
-  let imageProcessor = sharp(buffer)
-    .rotate() // Auto-rotate based on EXIF data
-
-  // Resize if needed
-  if (metadata.width && metadata.width > maxWidth) {
-    imageProcessor = imageProcessor.resize(maxWidth, maxHeight, {
-      fit: 'inside',
-      withoutEnlargement: true
-    })
-  }
-
-  // Convert to desired format
-  if (format === 'webp') {
-    imageProcessor = imageProcessor.webp({ quality })
-  } else if (format === 'jpeg') {
-    imageProcessor = imageProcessor.jpeg({ quality, mozjpeg: true })
-  } else if (format === 'png') {
-    imageProcessor = imageProcessor.png({ quality, compressionLevel: 9 })
-  }
-
-  const processedBuffer = await imageProcessor.toBuffer()
+  // Use aggressive compression to target file size
+  const compressed = await compressToTargetSize(
+    buffer,
+    maxFileSizeKB,
+    format,
+    maxWidth,
+    maxHeight
+  )
+  
+  const processedBuffer = compressed.buffer
   
   console.log('💾 Writing file to:', outputPath)
   await fs.writeFile(outputPath, processedBuffer)
@@ -172,7 +287,7 @@ export async function processImage(
   const processedMetadata = await sharp(processedBuffer).metadata()
   const processedSize = (await fs.stat(outputPath)).size
 
-  console.log(`✅ Processed: ${(processedSize / 1024).toFixed(2)}KB, ${processedMetadata.width}x${processedMetadata.height}`)
+  console.log(`✅ Final: ${(processedSize / 1024).toFixed(2)}KB, ${processedMetadata.width}x${processedMetadata.height}, quality: ${compressed.quality}`)
 
   const result: ProcessedImage = {
     filename: outputFilename,

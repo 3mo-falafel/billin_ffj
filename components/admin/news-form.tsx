@@ -52,6 +52,30 @@ export function NewsForm({ news }: NewsFormProps) {
   }
 
   const handleFileUpload = async (file: File, type: "image" | "video"): Promise<string> => {
+    // For images, use the compression API
+    if (type === "image") {
+      const formData = new FormData()
+      formData.append('file', file)
+      formData.append('maxWidth', '1200')
+      formData.append('quality', '80')
+      formData.append('generateThumbnail', 'true')
+      formData.append('maxFileSizeKB', '150') // Target max 150KB
+
+      const response = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData
+      })
+
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.error || 'Upload failed')
+      }
+
+      const result = await response.json()
+      return result.data?.url || result.url
+    }
+    
+    // For videos, use Supabase storage
     const fileExt = file.name.split(".").pop()
     const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`
     const filePath = `${type}s/${fileName}`

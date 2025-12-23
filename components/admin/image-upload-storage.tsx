@@ -38,12 +38,13 @@ export default function ImageUploadStorage({
   }, [existingImages])
 
   const uploadImage = async (file: File): Promise<string> => {
-    // Use the /api/upload endpoint to save files to disk
+    // Use the /api/upload endpoint to save files to disk with compression
     const formData = new FormData()
     formData.append('file', file)
     formData.append('maxWidth', '1600')
     formData.append('quality', '80')
     formData.append('generateThumbnail', 'true')
+    formData.append('maxFileSizeKB', '150') // Target max 150KB
 
     const response = await fetch('/api/upload', {
       method: 'POST',
@@ -74,15 +75,13 @@ export default function ImageUploadStorage({
     
     try {
       const uploadPromises = files.map(async (file) => {
-        // Validate file type
+        // Validate file type - accept any image
         if (!file.type.startsWith('image/')) {
           throw new Error(`${file.name} is not an image file`)
         }
         
-        // Validate file size (10MB max)
-        if (file.size > 10 * 1024 * 1024) {
-          throw new Error(`${file.name} is too large. Maximum size is 10MB`)
-        }
+        // Allow larger files - we'll compress them
+        console.log(`Compressing ${file.name}: ${(file.size / 1024 / 1024).toFixed(2)}MB`)
         
         const imageUrl = await uploadImage(file)
         return imageUrl
@@ -114,8 +113,14 @@ export default function ImageUploadStorage({
         <Label className="text-sm font-medium">Upload Images</Label>
         <div className="mt-1 border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
           <ImageIcon className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-          <p className="text-gray-600 mb-4">
-            Upload up to {maxImages} images (Max 10MB each)
+          <p className="text-gray-600 mb-2">
+            Upload up to {maxImages} images
+          </p>
+          <p className="text-xs text-gray-500 mb-2">
+            Any image format • Auto-compressed to ~150KB
+          </p>
+          <p className="text-xs text-green-600 font-medium mb-4">
+            ✓ Large files (10MB+) automatically compressed
           </p>
           <input
             type="file"
@@ -135,7 +140,7 @@ export default function ImageUploadStorage({
             {uploading ? (
               <>
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                Uploading...
+                Compressing & Uploading...
               </>
             ) : (
               <>
