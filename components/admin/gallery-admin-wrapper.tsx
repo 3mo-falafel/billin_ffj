@@ -774,7 +774,7 @@ export default function GalleryAdminWrapper() {
                     const files = Array.from(e.target.files || [])
                     if (files.length === 0) return
                     
-                    console.log('🔍 GALLERY ADMIN DEBUG - Starting image uploads with compression...', files.length, 'files')
+                    console.log('🔍 GALLERY ADMIN DEBUG - Starting image uploads...', files.length, 'files')
                     
                     // Function to upload image to server with compression
                     const uploadImage = async (file: File): Promise<string> => {
@@ -793,15 +793,17 @@ export default function GalleryAdminWrapper() {
                       })
 
                       const responseText = await response.text()
-                      console.log('🔍 Upload response status:', response.status, 'body:', responseText)
+                      console.log('🔍 Upload response for', file.name, ':', response.status, responseText.substring(0, 200))
                       
                       if (!response.ok) {
-                        let errorMsg = 'Upload failed'
+                        let errorMessage = 'Upload failed'
                         try {
-                          const errorData = JSON.parse(responseText)
-                          errorMsg = errorData.error || errorData.details || errorMsg
-                        } catch { }
-                        throw new Error(errorMsg)
+                          const error = JSON.parse(responseText)
+                          errorMessage = error.error || error.details || 'Upload failed'
+                        } catch {
+                          errorMessage = responseText || 'Upload failed'
+                        }
+                        throw new Error(`${file.name}: ${errorMessage}`)
                       }
 
                       const result = JSON.parse(responseText)
@@ -811,14 +813,17 @@ export default function GalleryAdminWrapper() {
                     }
                     
                     try {
-                      // Upload all images to server (replaces existing, not adds to them)
-                      const imageUrls = await Promise.all(files.map(file => uploadImage(file)))
+                      // Upload images sequentially to avoid overwhelming the server
+                      const imageUrls: string[] = []
+                      for (const file of files) {
+                        const url = await uploadImage(file)
+                        imageUrls.push(url)
+                      }
                       console.log('🔍 GALLERY ADMIN DEBUG - All images uploaded successfully:', imageUrls.length)
-                      // Replace images completely (not append)
                       setPhotoFormData(prev => ({ ...prev, images: imageUrls }))
                     } catch (error: any) {
                       console.error('🔍 GALLERY ADMIN DEBUG - Error uploading images:', error)
-                      alert('Failed to upload images: ' + (error.message || 'Unknown error'))
+                      alert(`Failed to upload images: ${error.message || 'Unknown error'}`)
                     }
                   }}
                 />
@@ -1074,35 +1079,41 @@ export default function GalleryAdminWrapper() {
                         
                         const newImages: string[] = []
                         for (const file of Array.from(files)) {
-                          // Upload the image to server with compression
-                          const formData = new FormData()
-                          formData.append('file', file)
-                          formData.append('maxWidth', '1600')
-                          formData.append('quality', '80')
-                          formData.append('generateThumbnail', 'true')
-                          formData.append('maxFileSizeKB', '150') // Target max 150KB
+                          try {
+                            console.log('🔍 Uploading:', file.name, '- Size:', (file.size / 1024 / 1024).toFixed(2), 'MB')
+                            const formData = new FormData()
+                            formData.append('file', file)
+                            formData.append('maxWidth', '1600')
+                            formData.append('quality', '80')
+                            formData.append('generateThumbnail', 'true')
+                            formData.append('maxFileSizeKB', '150')
 
-                          const response = await fetch('/api/upload', {
-                            method: 'POST',
-                            body: formData
-                          })
+                            const response = await fetch('/api/upload', {
+                              method: 'POST',
+                              body: formData
+                            })
 
-                          if (!response.ok) {
-                            const error = await response.json()
-                            console.error('Upload failed:', error)
-                            continue
+                            const responseText = await response.text()
+                            if (!response.ok) {
+                              console.error('Upload failed:', file.name, responseText)
+                              continue
+                            }
+
+                            const result = JSON.parse(responseText)
+                            const imageUrl = result.data?.url || result.url
+                            console.log('🔍 Uploaded:', file.name, '→', imageUrl)
+                            newImages.push(imageUrl)
+                          } catch (err) {
+                            console.error('Upload error for', file.name, ':', err)
                           }
-
-                          const result = await response.json()
-                          const imageUrl = result.data?.url || result.url
-                          console.log('🔍 GALLERY ADMIN DEBUG - Uploaded image:', file.name, '→', imageUrl)
-                          newImages.push(imageUrl)
                         }
                         
-                        setPhotoFormData({ 
-                          ...photoFormData, 
-                          images: [...photoFormData.images, ...newImages] 
-                        })
+                        if (newImages.length > 0) {
+                          setPhotoFormData({ 
+                            ...photoFormData, 
+                            images: [...photoFormData.images, ...newImages] 
+                          })
+                        }
                       }
                       input.click()
                     }}
